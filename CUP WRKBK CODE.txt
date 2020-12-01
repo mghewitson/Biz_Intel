@@ -1,0 +1,182 @@
+// Promo_AP_CUP
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\mhewi3\Desktop\Inventory Planning - Promo Apparel\CUP MGMT\2020\6_30_2020\2020-06-27_PROMO_APEQ_IP_Reports.xlsx"), null, true),
+    CUP_Sheet = Source{[Item="CUP",Kind="Sheet"]}[Data],
+    #"Promoted Headers" = Table.PromoteHeaders(CUP_Sheet, [PromoteAllScalars=true]),
+    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"Engine Run Date", type date}, {"PlngCtryCd", type text}, {"DivCd", type text}, {"Planner Name", type text}, {"SuplyChnMdlCd", type text}, {"Distribution Method Cd", type text}, {"Demand Season", type text}, {"AA_Ind", type text}, {"QT_Ind", type text}, {"SLT_Ind", type text}, {"ISR_Ind", type text}, {"Rebuy_Ind", type text}, {"Rebuy_BegDt", type date}, {"Rebuy_EndDt", type date}, {"DTC_Flow_Ind", type text}, {"ProdtCryovrInd", type text}, {"RgnProdtLfcyclCd", type text}, {"RgnFrstProdtOfrDt", type date}, {"RgnEndProdtOfrDt", type date}, {"Launch Code", type text}, {"Launch Date", type date}, {"US Core Focus", type text}, {"Core Focus", type text}, {"Product Category", type text}, {"Product SubCategory", type text}, {"League", type text}, {"Gender Age Description", type text}, {"StylDsplyCd", type text}, {"PlngProdtCd", type text}, {"Product Description", type text}, {"Silo Desc", type text}, {"RgnSeasnTeamLongDesc", type text}, {"GlblAthltId", Int64.Type}, {"GlblAthltFrstNm", type text}, {"GlblAthltLastNm", type text}, {"NALT_Module", type text}, {"Key Style Init", type text}, {"Promo Only Ind", type text}, {"DmndStreamNm", type text}, {"PlntIdCd", type text}, {"Fcty_Cd", type text}, {"GlblPlngProdtGrpDesc", type text}, {"Business Owner", type text}, {"Material Type", type text}, {"CHASE DESC", type any}, {"Missing Size Curve", type text}, {"GlblOutslTlg1Cd", type text}, {"ProdtCptyTypeCd", type text}, {"Drop Dead Date", type any}, {"Long Lead Time Ind", type text}, {"Macro Lead Time", Int64.Type}, {"Production Lead Time", Int64.Type}, {"Bus_Wk_Strt_Dt", type date}, {"Next_BuyDt", type date}, {"Earliest Delivery Date", type date}, {"GOED", type date}, {"GOED Days", Int64.Type}, {"Days Late", Int64.Type}, {"Min Days BL", Int64.Type}, {"DoneBuyngDt", type date}, {"ICCW Dt", type date}, {"PRICE_CONFIRMED", type text}, {"BUY_READY_FLAG", type text}, {"BOM_STAT", type text}, {"DO_NOT_BUY_CLWS", type any}, {"RESPONSIBLE_PRODUCT_DEVELOPER", type text}, {"Total Uncovered Promo", type text}, {"Total Uncovered Inline", type text}, {"Seasn Net DP Qty", Int64.Type}, {"Seasn Promo DP Qty", Int64.Type}, {"Seasn Inline Bkgs Qty", Int64.Type}, {"Seasn Promo Bkgs Qty", Int64.Type}, {"Seasn Promo PO Qty", Int64.Type}, {"Seasn Inline PO Qty", Int64.Type}, {"Ctry Seasn Inline Buy Qty", Int64.Type}, {"Ctry Seasn Promo Buy Qty", Int64.Type}, {"Glbl Seasn Inline Buy Qty", Int64.Type}, {"Glbl Seasn Promo Buy Qty", Int64.Type}, {"Tot Rlsd DP Qty", Int64.Type}, {"Net Rqrmnts Qty", Int64.Type}, {"Glbl Seasn Tot Unplanned Dmnd Qty", Int64.Type}, {"Ctry Seasn Tot Unplanned Dmnd Qty", Int64.Type}, {"Ctry Seasn Inline Total Unplanned - DC", Int64.Type}, {"Ctry Seasn Inline Total Unplanned - DRS/DSF", Int64.Type}, {"Tot Unplanned Dmnd Qty", Int64.Type}, {"Total Unplanned - DC", Int64.Type}, {"Total Unplanned - DRS/DSF", Int64.Type}, {"Fcty Mins", Int64.Type}, {"Dest Mins", Int64.Type}, {"GlblTotMinsQty", Int64.Type}, {"GlblFctyProdnMinsQty", Int64.Type}, {"UnPlndRsnDesc", type text}, {"Unplnd Dmnd Qty due to Cpty Cnstrnt Wo Raw Material", Int64.Type}, {"UnPlnd Dmnd Qty due to Raw Materials", Int64.Type}, {"Unplnd Dmnd Qty due to Mins", Int64.Type}, {"Unplnd Dmnd Qty due to Done Buying", Int64.Type}, {"Unplnd Dmnd Qty due to Lead Time", Int64.Type}, {"Unplnd Dmnd Qty due to PMD Excptn", Int64.Type}, {"Unplnd Dmnd Qty due to ICCW", Int64.Type}, {"UnPlnd Dmnd  due to MLP", Int64.Type}, {"UnPlnd Dmnd Other MD Excptn", Int64.Type}, {"Calc_FctyCd", type text}, {"Calc_FctyProdnMinsQty", Int64.Type}, {"Calc_FctyProdnMinsExcptnQty", Int64.Type}, {"Calc_Dest Mins", Int64.Type}, {"Calc_PlntGRPT_Days", Int64.Type}, {"Calc_Transit_Days", Int64.Type}, {"Max_PlntBldErlyPlndNbrOfDays", Int64.Type}, {"Max_PlntBldLtPlndNbrOfDays", Int64.Type}, {"Calc_Procmt_Lt", Int64.Type}, {"Calc_Mfg_LT", Int64.Type}, {"Calc_GIPT", Int64.Type}, {"Calc Buy Ready Ind", type text}, {"Express_Lane_Ind", type text}, {"PO_MKTG_INITIV_DESC_LIST", type text}}),
+    Jordan_Filter_Col = Table.AddColumn(#"Changed Type", "Jordan_Filter", each if Text.Contains([Product SubCategory], "JORDAN") then "Jordan" else null),
+    Jordan_Filter = Table.SelectRows(Jordan_Filter_Col, each ([Jordan_Filter] = null)),
+    Remove_Jordan_Col = Table.RemoveColumns(Jordan_Filter,{"Jordan_Filter"}),
+    #"Lead Time Addition" = Table.AddColumn(Remove_Jordan_Col, "Addition", each [Calc_Procmt_Lt] + [Calc_Mfg_LT], Int64.Type),
+    #"Renamed Lead Time Column" = Table.RenameColumns(#"Lead Time Addition",{{"Addition", "Ttl Lead Time"}}),
+    #"Grouped Rows" = Table.Group(#"Renamed Lead Time Column", {"Demand Season", "PlngProdtCd", "Product Description", "Core Focus", "DivCd", "League", "PlntIdCd", "Distribution Method Cd", "Calc_FctyCd", "PRICE_CONFIRMED", "BUY_READY_FLAG", "PO_MKTG_INITIV_DESC_LIST", "Ttl Lead Time"}, {{"Seasn Promo Bkgs Qty", each List.Sum([Seasn Promo Bkgs Qty]), type number}, {"Seasn Promo PO Qty", each List.Sum([Seasn Promo PO Qty]), type number}, {"Unplanned Dmnd - MD Exception", each List.Sum([UnPlnd Dmnd Other MD Excptn]), type number}, {"Unplanned Dmnd - PMD Exception", each List.Sum([Unplnd Dmnd Qty due to PMD Excptn]), type number}, {"Unplanned Dmnd - MLP", each List.Sum([UnPlnd Dmnd  due to MLP]), type number}, {"Unplanned Dmnd - Done Buying", each List.Sum([Unplnd Dmnd Qty due to Done Buying]), type number}, {"Unplanned Dmnd - Lead Time", each List.Sum([Unplnd Dmnd Qty due to Lead Time]), type number}, {"Unplanned Dmnd - Capacity", each List.Sum([Unplnd Dmnd Qty due to Cpty Cnstrnt Wo Raw Material]), type number}, {"Unplanned Dmnd - Raw Materials", each List.Sum([UnPlnd Dmnd Qty due to Raw Materials]), type number}, {"Tot Unplanned Dmnd Qty", each List.Sum([Tot Unplanned Dmnd Qty]), type number}}),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Grouped Rows",{{"Seasn Promo Bkgs Qty", Int64.Type}, {"Seasn Promo PO Qty", Int64.Type}, {"Unplanned Dmnd - MD Exception", Int64.Type}, {"Unplanned Dmnd - PMD Exception", Int64.Type}, {"Unplanned Dmnd - MLP", Int64.Type}, {"Unplanned Dmnd - Done Buying", Int64.Type}, {"Unplanned Dmnd - Lead Time", Int64.Type}, {"Unplanned Dmnd - Capacity", Int64.Type}, {"Unplanned Dmnd - Raw Materials", Int64.Type}, {"Tot Unplanned Dmnd Qty", Int64.Type}}),
+    #"Filtered Rows" = Table.SelectRows(#"Changed Type1", each ([Demand Season] = Season_1 or [Demand Season] = Season_2 or [Demand Season] = Season_3) and ([League] <> "NBA" and [League] <> "WNBA" and [League] <> "NBA G-LEAGUE") and ([DivCd] = "10") and ([PlntIdCd] <> "1051")),
+    #"Merged Factory_Lookup" = Table.NestedJoin(#"Filtered Rows",{"Calc_FctyCd"},Factory_Lookup,{"Vendor Code"},"Factory_Lookup",JoinKind.LeftOuter),
+    #"Expanded Factory_Lookup" = Table.ExpandTableColumn(#"Merged Factory_Lookup", "Factory_Lookup", {"Desc"}, {"Factory_Lookup.Desc"}),
+    Replace_Fac_Nulls = Table.ReplaceValue(#"Expanded Factory_Lookup", null, each if [Calc_FctyCd] = null then "No Factory Source" else null, Replacer.ReplaceValue,{"Factory_Lookup.Desc"}),
+    GAC_Calc = Table.AddColumn(Replace_Fac_Nulls, "GAC Date", each if [Ttl Lead Time] = 0 then null else Number.From(Buy_Date)+[Ttl Lead Time]),
+    Change_GAC_Type = Table.TransformColumnTypes(GAC_Calc,{{"GAC Date", type date}}),
+    #"Merged Blocked_Qty" = Table.NestedJoin(Change_GAC_Type,{"PlngProdtCd", "PlntIdCd"},Blocked_Qty,{"Material #", "Plnt"},"Blocked_Qty",JoinKind.LeftOuter),
+    #"Expanded Blocked_Qty" = Table.ExpandTableColumn(#"Merged Blocked_Qty", "Blocked_Qty", {"Blocked_Qty"}, {"Blocked_Qty.Blocked_Qty"}),
+    DRS_Replace1 = Table.ReplaceValue(#"Expanded Blocked_Qty",each [Blocked_Qty.Blocked_Qty] ,each if [Distribution Method Cd] = "DRS" then 0 else [Blocked_Qty.Blocked_Qty], Replacer.ReplaceValue,{"Blocked_Qty.Blocked_Qty"}),
+    #"Replaced DRS 0" = Table.ReplaceValue(DRS_Replace1,null,0,Replacer.ReplaceValue,{"Blocked_Qty.Blocked_Qty"}),
+    #"Changed Type4" = Table.TransformColumnTypes(#"Replaced DRS 0",{{"Blocked_Qty.Blocked_Qty", Int64.Type}}),
+    #"Merged Blocked_Qty_01000" = Table.NestedJoin(#"Changed Type4",{"PlngProdtCd", "PlntIdCd"},Blocked_Qty_01000,{"Material #", "Plnt"},"Blocked_Qty_01000",JoinKind.LeftOuter),
+    #"Expanded Blocked_Qty_01000" = Table.ExpandTableColumn(#"Merged Blocked_Qty_01000", "Blocked_Qty_01000", {"Blocked_Qty"}, {"Blocked_Qty_01000.Blocked_Qty"}),
+    DRS_Replace2 = Table.ReplaceValue(#"Expanded Blocked_Qty_01000",each [Blocked_Qty_01000.Blocked_Qty] ,each if [Distribution Method Cd] = "DRS" then 0 else [Blocked_Qty_01000.Blocked_Qty], Replacer.ReplaceValue,{"Blocked_Qty_01000.Blocked_Qty"}),
+    #"Replaced DRS 0-2" = Table.ReplaceValue(DRS_Replace2,null,0,Replacer.ReplaceValue,{"Blocked_Qty_01000.Blocked_Qty"}),
+    #"Changed Type7" = Table.TransformColumnTypes(#"Replaced DRS 0-2",{{"Blocked_Qty_01000.Blocked_Qty", Int64.Type}}),
+    Merged_PIR_DATA = Table.NestedJoin(#"Changed Type7", {"PlngProdtCd", "PlntIdCd", "Calc_FctyCd"}, PIR_DATA, {"Material", "Plant", "Vendor"}, "PIR_DATA", JoinKind.LeftOuter),
+    #"Expanded PIR_DATA" = Table.ExpandTableColumn(Merged_PIR_DATA, "PIR_DATA", {"Purchasing info rec."}, {"PIR_DATA.Purchasing info rec."}),
+    #"Renamed PIR DATA" = Table.RenameColumns(#"Expanded PIR_DATA",{{"PIR_DATA.Purchasing info rec.", "PIR #"}}),
+    #"Add Calc_Comments Column" = Table.AddColumn(#"Renamed PIR DATA", "Calc_Comments", each if Text.Length([PlngProdtCd]) < 10 then "Plug"
+        else if [Distribution Method Cd] = "DC" and [#"Unplanned Dmnd - PMD Exception"] = 0 and [Blocked_Qty.Blocked_Qty] = 0 and [Blocked_Qty_01000.Blocked_Qty] = 0 then "Covered"
+        else if [PlntIdCd] = "1015" and [Blocked_Qty.Blocked_Qty] = 0 and [Blocked_Qty_01000.Blocked_Qty] > 0 then "1015: 01000 Uncvrd Dmnd"
+        else if Text.Contains([Product Description],"NRG") then "NRG"
+        else if [PlntIdCd] = "1051" then "1051"
+        else if [#"Unplanned Dmnd - Done Buying"] > 0 and [Factory_Lookup.Desc] <> null then "Done Buying " & [Factory_Lookup.Desc]
+        else if [#"Unplanned Dmnd - Done Buying"] > 0 then "Done Buying"
+        else if Text.Length([Factory_Lookup.Desc]) <> null then [Factory_Lookup.Desc]
+        else if [PRICE_CONFIRMED] = "N" then "Not Price Confirmed"
+        else if [#"Unplanned Dmnd - MD Exception"] > 0 then "MD Exception"
+        else if [#"Unplanned Dmnd - PMD Exception"] > 0 then "PMD Exception"
+        else if [#"Unplanned Dmnd - MLP"] > 0 and [#"Unplanned Dmnd - MLP"] < 1000 and [Core Focus] = "TENNIS" then "MPO"
+        else if [#"Unplanned Dmnd - MLP"] > 1000 and [Core Focus] = "TENNIS" then "Global MPO"
+        else if [#"Unplanned Dmnd - MLP"] > 0 then "MLP"
+        else if [#"Unplanned Dmnd - Capacity"] > 0 and [#"Unplanned Dmnd - Capacity"] < 1000 then "MPO"
+        else if [#"Unplanned Dmnd - Capacity"] > 999 then "Global MPO"
+        else if [#"Unplanned Dmnd - Lead Time"] > 999 then "Global MPO"
+        else if [#"Unplanned Dmnd - Lead Time"] < 1000 then "MPO"
+        else null),
+    #"Changed Calc_Comments Type" = Table.TransformColumnTypes(#"Add Calc_Comments Column",{{"Calc_Comments", type text}}),
+    #"Added FOB Lookup Column" = Table.AddColumn(#"Changed Calc_Comments Type", "FOB Lookup", each [PlngProdtCd]&","&[Calc_FctyCd]&","&[PlntIdCd]&","&Text.End([Demand Season],2)&Text.Start([Demand Season],4)),
+    #"Added Manual Comments Column" = Table.AddColumn(#"Added FOB Lookup Column", "Manual Comments", each null),
+    #"Changed FOB Lookup Type" = Table.TransformColumnTypes(#"Added Manual Comments Column",{{"FOB Lookup", type text}}),
+    #"01000_Dmnd_Flag" = Table.AddColumn(#"Changed FOB Lookup Type", "ISEG 01000 Dmnd Flag", each if [Blocked_Qty_01000.Blocked_Qty] > 0 and [PlntIdCd] = "1015" then "01000 Demand" else null),
+    #"Changed 01000_Dmnd_Flag Type" = Table.TransformColumnTypes(#"01000_Dmnd_Flag",{{"ISEG 01000 Dmnd Flag", type text}}),
+    #"Reordered Columns" = Table.ReorderColumns(#"Changed 01000_Dmnd_Flag Type",{"FOB Lookup", "PIR #",  "Ttl Lead Time", "Factory_Lookup.Desc", "GAC Date", "ISEG 01000 Dmnd Flag","Blocked_Qty.Blocked_Qty", "Blocked_Qty_01000.Blocked_Qty", "Calc_Comments", "Manual Comments", "Demand Season", "PlngProdtCd", "Product Description", "Core Focus", "DivCd", "League", "PlntIdCd", "Distribution Method Cd", "Calc_FctyCd", "PRICE_CONFIRMED", "BUY_READY_FLAG", "PO_MKTG_INITIV_DESC_LIST", "Seasn Promo Bkgs Qty", "Seasn Promo PO Qty", "Unplanned Dmnd - MD Exception", "Unplanned Dmnd - PMD Exception", "Unplanned Dmnd - MLP", "Unplanned Dmnd - Done Buying", "Unplanned Dmnd - Lead Time", "Unplanned Dmnd - Capacity", "Unplanned Dmnd - Raw Materials", "Tot Unplanned Dmnd Qty"}),
+    #"Renamed Columns" = Table.RenameColumns(#"Reordered Columns",{{"Blocked_Qty.Blocked_Qty", "01PMO_Blkd_Qty"}, {"Blocked_Qty_01000.Blocked_Qty", "01000_Blkd_Qty"}}),
+    #"Merged Queries" = Table.NestedJoin(#"Renamed Columns", {"PlngProdtCd"}, SP21_Styleman, {"Style/Color"}, "SP21_Styleman", JoinKind.LeftOuter),
+    #"Expanded SP21_Styleman" = Table.ExpandTableColumn(#"Merged Queries", "SP21_Styleman", {"STYLEMAN#(lf)or#(lf)SAP"}, {"SP21_Styleman.STYLEMAN#(lf)or#(lf)SAP"}),
+    #"Renamed Columns1" = Table.RenameColumns(#"Expanded SP21_Styleman",{{"SP21_Styleman.STYLEMAN#(lf)or#(lf)SAP", "SP21_Styleman.STYLEMAN"}}),
+    Replace_Man_Nulls_Styleman = Table.ReplaceValue(#"Renamed Columns1", null, each if [SP21_Styleman.STYLEMAN] <> null then [SP21_Styleman.STYLEMAN] else null, Replacer.ReplaceValue,{"Manual Comments"}),
+    #"Removed Columns" = Table.RemoveColumns(Replace_Man_Nulls_Styleman,{"SP21_Styleman.STYLEMAN"})
+in
+    #"Removed Columns"
+
+// Season_1
+let
+    Source = Excel.CurrentWorkbook(){[Name="Season_1"]}[Content],
+    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Season 1", type text}}),
+    #"Season 1" = #"Changed Type"{0}[Season 1]
+in
+    #"Season 1"
+
+// Season_2
+let
+    Source = Excel.CurrentWorkbook(){[Name="Season_2"]}[Content],
+    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Season 2", type text}}),
+    #"Season 2" = #"Changed Type"{0}[Season 2]
+in
+    #"Season 2"
+
+// Season_3
+let
+    Source = Excel.CurrentWorkbook(){[Name="Season_218"]}[Content],
+    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Season 3", type text}}),
+    #"Season 3" = #"Changed Type"{0}[Season 3]
+in
+    #"Season 3"
+
+// Factory_Lookup
+let
+    Source = Excel.CurrentWorkbook(){[Name="Factory_Lookup"]}[Content],
+    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Vendor Code", type text}, {"Desc", type text}})
+in
+    #"Changed Type"
+
+// Buy_Date
+let
+    Source = Excel.CurrentWorkbook(){[Name="Table5"]}[Content],
+    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Buy Date", type date}}),
+    #"Buy Date" = #"Changed Type"{0}[Buy Date]
+in
+    #"Buy Date"
+
+// Blocked_Qty
+let
+    Source = Excel.CurrentWorkbook(){[Name="Blkd_Qty_CUP"]}[Content],
+    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Material #", type text}, {"Plnt", type text}, {"Styp", type any}, {"Order#", Int64.Type}, {"Item#", Int64.Type}, {"Mat.av.dt.", type datetime}, {"Quantity", Int64.Type}, {"UOM", type text}, {"Size", type any}, {"Category", type text}, {"Description", type text}}),
+    #"Added Custom" = Table.AddColumn(#"Changed Type", "Filtering", each if [Plnt] = "1015" and [Category] <> "01PMO" then "Exclude"
+else null),
+    #"Filtered Rows" = Table.SelectRows(#"Added Custom", each ([Filtering] = null)),
+    #"Removed Columns" = Table.RemoveColumns(#"Filtered Rows",{"Filtering"}),
+    #"Grouped Rows" = Table.Group(#"Removed Columns", {"Plnt", "Material #"}, {{"Blocked_Qty", each List.Sum([Quantity]), type number}}),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Grouped Rows",{{"Blocked_Qty", Int64.Type}})
+in
+    #"Changed Type1"
+
+// Blocked_Qty_01000
+let
+    Source = Excel.CurrentWorkbook(){[Name="Blkd_Qty_CUP"]}[Content],
+    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Material #", type text}, {"Plnt", type text}, {"Styp", type any}, {"Order#", Int64.Type}, {"Item#", Int64.Type}, {"Mat.av.dt.", type datetime}, {"Quantity", Int64.Type}, {"UOM", type text}, {"Size", type any}, {"Category", type text}, {"Description", type text}}),
+    #"Added Custom" = Table.AddColumn(#"Changed Type", "Filtering", each if [Plnt] = "1015" and [Category] <> "1000" then "Exclude"
+else null),
+    #"Filtered Rows" = Table.SelectRows(#"Added Custom", each ([Filtering] = null)),
+    #"Removed Columns" = Table.RemoveColumns(#"Filtered Rows",{"Filtering"}),
+    #"Grouped Rows" = Table.Group(#"Removed Columns", {"Plnt", "Material #"}, {{"Blocked_Qty", each List.Sum([Quantity]), type number}}),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Grouped Rows",{{"Blocked_Qty", Int64.Type}})
+in
+    #"Changed Type1"
+
+// PIR_DATA
+let
+    Source = Excel.CurrentWorkbook(){[Name="PIR_DATA"]}[Content],
+    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Vendor", type text}, {"Purch. Organization", type text}, {"Plant", type text}, {"Purchasing info rec.", type text}, {"Text for Item Cat.", type text}, {"Net Order Value", Currency.Type}, {"Currency", type text}, {"Condition type", type text}, {"Name", type text}, {"Amount", Currency.Type}, {"Currency2", type text}, {"Pricing unit", Int64.Type}, {"Condition unit", type text}, {"Condition value", Currency.Type}, {"Material", type text}, {"Concat", type text}, {"Concat2", type text}}),
+    #"Removed Columns" = Table.RemoveColumns(#"Changed Type",{"Purch. Organization", "Text for Item Cat.", "Net Order Value", "Currency", "Condition type", "Name", "Amount", "Currency2", "Pricing unit", "Condition unit", "Condition value"}),
+    #"Removed Duplicates" = Table.Distinct(#"Removed Columns")
+in
+    #"Removed Duplicates"
+
+// SP21_Styleman
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\mhewi3\Desktop\Inventory Planning - Promo Apparel\Seasons\SP21\Copy of SP21 Fed Order Form Line Plan.xlsx"), null, true),
+    Table13_Table = Source{[Item="Table13",Kind="Table"]}[Data],
+    #"Changed Type" = Table.TransformColumnTypes(Table13_Table,{{"STYLEMAN#(lf)or#(lf)SAP", type text}, {"SP20 FOB", Int64.Type}, {"INLINE STYLE #", type any}, {"MOID", type any}, {"STYLE #", type any}, {"COLOR CODE", Int64.Type}, {"COLOR DESCRIPTION", type text}, {"STYLE DESCRIPTION", type text}, {"Style/Color", type text}}),
+    #"Removed Columns" = Table.RemoveColumns(#"Changed Type",{"SP20 FOB", "INLINE STYLE #", "MOID", "STYLE #", "COLOR CODE", "COLOR DESCRIPTION", "STYLE DESCRIPTION"}),
+    #"Removed Duplicates" = Table.Distinct(#"Removed Columns")
+in
+    #"Removed Duplicates"
+
+// Promo_Buy_Plan_Pivot
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\mhewi3\Desktop\Inventory Planning - Promo Apparel\CUP MGMT\2020\6_30_2020\2020-06-27_PROMO_APEQ_IP_Reports.xlsx"), null, true),
+    Buy_Plan_Pivot_Sheet = Source{[Item="Buy_Plan_Pivot",Kind="Sheet"]}[Data],
+    #"Promoted Headers" = Table.PromoteHeaders(Buy_Plan_Pivot_Sheet, [PromoteAllScalars=true]),
+    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"Engine Run Date", type date}, {"PlngCtryCd", type text}, {"DivCd", type text}, {"Planner Name", type text}, {"BUSINESS OWNER", type text}, {"MatlTypeCd", type text}, {"AA_Ind", type text}, {"QT_Ind", type text}, {"ISR_Ind", type text}, {"Express_Lane_Ind", type text}, {"ShrtLeadTmInd", type text}, {"Rebuy_Ind", type any}, {"Rebuy_BegDt", type any}, {"Rebuy_EndDt", type any}, {"League", type text}, {"ProdtCryovrInd", type text}, {"RgnFrstProdtOfrDt", type date}, {"RgnEndProdtOfrDt", type date}, {"RgnProdtLfcyclCd", type text}, {"Launch Code", type text}, {"Launch Date", type date}, {"RgnSeasnTeamLongDesc", type text}, {"GlblAthltId", Int64.Type}, {"GlblAthltFrstNm", type text}, {"GlblAthltLastNm", type text}, {"NALT_Module", type text}, {"Key Style Init", type text}, {"US Core Focus", type text}, {"Core Focus", type text}, {"Product Category", type text}, {"Product SubCategory", type text}, {"Gender Age Description", type text}, {"StylDsplyCd", type text}, {"PlngProdtCd", type text}, {"Product Description", type text}, {"Demand Season", type text}, {"PlntIdCd", type text}, {"FctyCd", type text}, {"GlblOutslTlg1Cd", type text}, {"GlblPlngProdtGrpDesc", type text}, {"ProdtCptyTypeCd", type text}, {"Silo Desc", type text}, {"Promo Only Ind", type text}, {"ATP_CatCd", type text}, {"ATP Cat Desc", type text}, {"DestMinQty", Int64.Type}, {"BelwDestMinInd", type text}, {"ProdnMinQty", Int64.Type}, {"Fcty Default Mins Qty", Int64.Type}, {"FctyProdnMinsExcptnQty", Int64.Type}, {"BelwProdnMinInd", type text}, {"Macro Lead Time", Int64.Type}, {"Earliest Delivery Date", type date}, {"AFS_CatCd", type text}, {"GOED", type date}, {"GOED Days", Int64.Type}, {"GblOrdEntryDdlnSeasnYrMoNbr", type text}, {"GblOrdEntryDdlnWDmndSelHrznDt", type date}, {"PRICE_CONFIRMED", type text}, {"BUY_READY_FLAG", type text}, {"Calc Buy Ready Ind", type text}, {"BOM_STAT", type text}, {"DO_NOT_BUY_CLWS", type text}, {"RESPONSIBLE_PRODUCT_DEVELOPER", type text}, {"Price Effective Date", type any}, {"Price Date check Ind", type any}, {"FGPlugSzInd", type any}, {"Apply TDS Ind", type text}, {"DC Mins Ind", type text}, {"Long Lead Time Ind", type text}, {"Needs Review Ind", type text}, {"BlindBuyInd", type text}, {"BuyBlckInd", type text}, {"DTC_Flow_Ind", type text}, {"SNP_WkStrtDt", type date}, {"STR_MAD", type date}, {"STR_DlvryDt", type date}, {"ProdnStrtDt", type date}, {"OGAC_Dt", type date}, {"BuyWkDt", type date}, {"Post GOED Buy Qty", Int64.Type}, {"Buy Qty", Int64.Type}, {"PO_MKTG_INITIV_DESC_LIST", type text}}),
+    #"Added Custom" = Table.AddColumn(#"Changed Type", "Season/Style Concat", each Text.Combine({[Demand Season],[PlngProdtCd]})),
+    Filter_Rows = Table.SelectRows(#"Added Custom", each ([Demand Season] = Season_1 or [Demand Season] = Season_2 or [Demand Season] = Season_3) and ([League] <> "NBA" and [League] <> "WNBA" and [League] <> "NBA G-League") and ([DivCd] = "10"))
+    
+in
+    Filter_Rows
+
+// Late_Add_Active Requests
+let
+    Source = Excel.Workbook(Web.Contents("https://nike.sharepoint.com/teams/na7/nabsc/InventoryPlanning/IMPO/Shared%20Documents/Brand_Sports%20Mktg%20Late%20Add%20Tool%20-%20NEW.xlsx"), null, true),
+    #"Active Requests_Sheet" = Source{[Item="Active Requests",Kind="Sheet"]}[Data],
+    #"Removed Top Rows" = Table.Skip(#"Active Requests_Sheet",18),
+    #"Promoted Headers" = Table.PromoteHeaders(#"Removed Top Rows", [PromoteAllScalars=true]),
+    #"Replaced Errors" = Table.ReplaceErrorValues(#"Promoted Headers", {{"Fcty PO#", null}}),
+    #"Changed Type" = Table.TransformColumnTypes(#"Replaced Errors",{{"Request Date", type date}, {"Requestor", type text}, {"PE", type text}, {"Style Color", type text}, {"Description", type text}, {"Prod Category", type text}, {"Qty", type any}, {"DC/DRS?", type text}, {"Promo Only Style?", type any}, {"Buy Ready? Y/N", type text}, {"Season", type text}, {"CRD", type date}, {"Event", type text}, {"GAC Date", type date}, {"ETA to DC (VL)", type date}, {"ETA to DC (AF)", type date}, {"IP Comments", type text}, {"Fcty PO#", type text}, {"Column19", type any}, {"Column20", type any}, {"Column21", type any}}),
+    #"Removed Columns" = Table.RemoveColumns(#"Changed Type",{"Column19", "Column20", "Column21"}),
+    #"Removed Blank Rows" = Table.SelectRows(#"Removed Columns", each not List.IsEmpty(List.RemoveMatchingItems(Record.FieldValues(_), {"", null}))),
+    #"Filtered Rows" = Table.SelectRows(#"Removed Blank Rows", each ([PE] = "AP")),
+    #"Sorted Rows" = Table.Sort(#"Filtered Rows",{{"Request Date", Order.Ascending}}),
+    #"Added Conditional Column" = Table.AddColumn(#"Sorted Rows", "Fcty PO Check", each if [#"Fcty PO#"] = null then "Not Bought" else if [#"Fcty PO#"] = "#N/A" then "Not Bought" else if Text.StartsWith([#"Fcty PO#"], "45") then "Bought" else "Not Bought"),
+    #"Filtered Rows1" = Table.SelectRows(#"Added Conditional Column", each ([Fcty PO Check] = "Not Bought")),
+    #"Removed Columns1" = Table.RemoveColumns(#"Filtered Rows1",{"Fcty PO Check"}),
+    #"Trimmed Text" = Table.TransformColumns(#"Removed Columns1",{{"Requestor", Text.Trim, type text}, {"PE", Text.Trim, type text}, {"Style Color", Text.Trim, type text}, {"Description", Text.Trim, type text}, {"Prod Category", Text.Trim, type text}, {"Season", Text.Trim, type text}, {"Event", Text.Trim, type text}}),
+    #"Removed Columns2" = Table.RemoveColumns(#"Trimmed Text",{"Column22", "Column23", "Column24", "Column25", "Column26", "Column27", "Column28", "Column29", "Column30", "Column31", "Column32", "Column33", "Column34", "Column35", "Column36", "Column37"})
+in
+    #"Removed Columns2"
