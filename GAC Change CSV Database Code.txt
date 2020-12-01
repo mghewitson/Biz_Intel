@@ -1,0 +1,98 @@
+// Weekly GAC Data
+let
+    Source = Folder.Files("C:\Users\mhewi3\Desktop\Weekly GAC Report Update\Weekly GAC Data"),
+    #"Filtered Hidden Files1" = Table.SelectRows(Source, each [Attributes]?[Hidden]? <> true),
+    #"Invoke Custom Function1" = Table.AddColumn(#"Filtered Hidden Files1", "Transform File", each #"Transform File"([Content])),
+    #"Renamed Columns1" = Table.RenameColumns(#"Invoke Custom Function1", {"Name", "Source.Name"}),
+    #"Removed Other Columns1" = Table.SelectColumns(#"Renamed Columns1", {"Source.Name", "Transform File"}),
+    #"Expanded Table Column1" = Table.ExpandTableColumn(#"Removed Other Columns1", "Transform File", Table.ColumnNames(#"Transform File"(#"Sample File"))),
+    #"Changed Type" = Table.TransformColumnTypes(#"Expanded Table Column1",{{"Source.Name", type text}, {"No", type text}, {"Update date", type date}, {"DEC", type text}, {"DECA", type text}, {"GEO Contact", type text}, {"Vndr Nbr", type text}, {"PO HdrNbr", type text}, {"PO_ItmNbr", type text}, {"Plng Prodt Cd", type text}, {"Material Description", type text}, {"Glbl Cat Sum Desc", type text}, {"GlblProdtCatLongDesc", type text}, {"Dmnd Seasn Cd", type text}, {"PO ShpgInstrnsCd", type text}, {"Day of Origl GAC Dt", type date}, {"Day of GAC Dt", type date}, {"GAC RsnDesc", type text}, {"IntrnlBuyngGrpDesc", type text}, {"Plnt Id Cd", type text}, {"Quantity", Int64.Type}, {"Launch Code", type text}, {"PurchgGrpNm", type text}, {"Day of PO DocDt", type date}, {"GlblLgDesc", type text}, {"GEO", type text}, {"New GAC date", type date}, {"(+/-)", Int64.Type}, {"Delay weeks ", type text}, {"GAC Reason Code", type text}, {"MRP code", type text}, {"DEC comments", type text}, {"Impact MI OTP", type text}, {"GEO comments", type any}, {"remarks", type text}, {"differ", Int64.Type}, {"", type any}, {"_1", type any}, {"_2", type any}, {"_3", type any}, {"_4", type any}, {"_5", type any}}),
+    #"Removed Columns" = Table.RemoveColumns(#"Changed Type",{"differ", "", "_1", "_2", "_3", "_4", "_5"}),
+    #"Added Custom" = Table.AddColumn(#"Removed Columns", "Report Date", each Text.Middle([Source.Name],25,8)),
+    #"Replaced Value" = Table.ReplaceValue(#"Added Custom","_","/",Replacer.ReplaceText,{"Report Date"}),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Replaced Value",{{"Report Date", type date}}),
+    #"Replaced Errors" = Table.ReplaceErrorValues(#"Changed Type1", {{"No", null},{"Update date", null},{"DEC", null},{"DECA", null},{"GEO Contact", null},{"Vndr Nbr", null},{"PO HdrNbr", null},{"PO_ItmNbr", null},{"Plng Prodt Cd", null},{"Material Description", null},{"Glbl Cat Sum Desc", null},{"GlblProdtCatLongDesc", null},{"Dmnd Seasn Cd", null},{"PO ShpgInstrnsCd", null},{"Day of Origl GAC Dt", null},{"Day of GAC Dt", null},{"GAC RsnDesc", null},{"IntrnlBuyngGrpDesc", null},{"Plnt Id Cd", null},{"Quantity", null},{"Launch Code", null},{"PurchgGrpNm", null},{"Day of PO DocDt", null},{"GlblLgDesc", null},{"GEO", null},{"New GAC date", null},{"(+/-)",null},{"GAC Reason Code", null},{"MRP code", null},{"DEC comments", null},{"Impact MI OTP", null},{"GEO comments", null},{"remarks", null}}),
+    #"Removed Columns1" = Table.RemoveColumns(#"Replaced Errors",{"(+/-)","Impact MI OTP", "GEO comments", "remarks"}),
+    #"Grouped Rows" = Table.Group(#"Removed Columns1", {"Report Date", "Dmnd Seasn Cd", "IntrnlBuyngGrpDesc", "GEO", "DEC comments", "Delay weeks "}, {{"Quantity", each List.Sum([Quantity]), type number}}),
+    #"Changed Type2" = Table.TransformColumnTypes(#"Grouped Rows",{{"Quantity", Int64.Type}}),
+    #"Filtered Rows" = Table.SelectRows(#"Changed Type2", each ([GEO] = "NAMK")),
+    #"Added Custom1" = Table.AddColumn(#"Filtered Rows", "Report Date (MMM-YYYY)", each Text.Start(Date.MonthName([Report Date]),3)&"-"&Number.ToText(Date.Year([Report Date]))),
+    #"Changed Type3" = Table.TransformColumnTypes(#"Added Custom1",{{"Report Date (MMM-YYYY)", type text}}),
+    #"Reordered Columns" = Table.ReorderColumns(#"Changed Type3",{"Report Date (MMM-YYYY)", "Report Date", "Dmnd Seasn Cd", "IntrnlBuyngGrpDesc", "GEO", "DEC comments", "Delay weeks ", "Quantity"}),
+    #"Delay_Lookup - Column" = Table.AddColumn(#"Reordered Columns", "Delay_Lookup", each if Text.Contains([DEC comments], "New") then "New Delay" else if Text.Contains([DEC comments], "Further") then "Further Delay" else null),
+    #"Changed Type4" = Table.TransformColumnTypes(#"Delay_Lookup - Column",{{"Delay_Lookup", type text}})
+in
+    #"Changed Type4"
+
+// Transform File
+let
+    Source = (Parameter1 as binary) => let
+        Source = Csv.Document(Parameter1,[Delimiter=",", Columns=41, Encoding=65001, QuoteStyle=QuoteStyle.None]),
+        #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true])
+    in
+        #"Promoted Headers"
+in
+    Source
+
+// Sample File
+let
+    Source = Folder.Files("C:\Users\mhewi3\Desktop\Weekly GAC Report Update\Weekly GAC Data"),
+    Navigation1 = Source{0}[Content]
+in
+    Navigation1
+
+
+// Current_Wk_Data
+let
+    Source = Csv.Document(File.Contents("C:\Users\mhewi3\Desktop\Weekly GAC Report Update\Weekly GAC Data\Weekly GAC Change Report 07_22_20.csv"),[Delimiter=",", Columns=36, Encoding=1252, QuoteStyle=QuoteStyle.None]),
+    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+
+    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{
+        {Table.ColumnNames(#"Promoted Headers"){0}, Int64.Type}, 
+        {Table.ColumnNames(#"Promoted Headers"){1}, type date}, 
+        {Table.ColumnNames(#"Promoted Headers"){2}, type text}, 
+        {Table.ColumnNames(#"Promoted Headers"){3}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){4}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){5}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){6}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){7}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){8}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){9}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){10}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){11}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){12}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){13}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){14}, type date},
+        {Table.ColumnNames(#"Promoted Headers"){15}, type date},
+        {Table.ColumnNames(#"Promoted Headers"){16}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){17}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){18}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){19}, Int64.Type},
+        {Table.ColumnNames(#"Promoted Headers"){20}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){21}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){22}, type date},
+        {Table.ColumnNames(#"Promoted Headers"){23}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){24}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){25}, type date},
+        {Table.ColumnNames(#"Promoted Headers"){26}, Int64.Type},
+        {Table.ColumnNames(#"Promoted Headers"){27}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){28}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){29}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){30}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){31}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){32}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){33}, type text},
+        {Table.ColumnNames(#"Promoted Headers"){34}, type text}
+        }),
+
+    ListCol1 = Table.ColumnNames(#"Changed Type"),
+    #"Converted to Table1" = Table.FromList(ListCol1, Splitter.SplitByNothing(), null, null, ExtraValues.Error),
+    Custom = Table.AddColumn(#"Converted to Table1","Custom", each null),
+    #"Transposed Table1" = Table.Transpose(Custom),
+    ColList1 = Table.ToColumns(#"Transposed Table1"),
+    RplcErrors = Table.ReplaceErrorValues(#"Changed Type", ColList1),
+
+    #"Delay_Lookup - Column" = Table.AddColumn(RplcErrors, "Delay_Lookup", each if Text.Contains([DEC comments], "New") then "New Delay" else if Text.Contains([DEC comments], "Further") then "Further Delay" else null),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Delay_Lookup - Column",{{"Delay_Lookup", type text}})
+in
+    #"Changed Type1"
