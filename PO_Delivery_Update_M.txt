@@ -1,0 +1,347 @@
+// PO_REPORT_DATA
+let
+    Source = Excel.Workbook(File.Contents("C:\Users\mhewi3\Desktop\PO Delivery Update\PO Reports\PO Report - Promo Delivery Update - 11_20_2020.xlsx"), null, true),
+    page_Sheet = Source{[Item="page",Kind="Sheet"]}[Data],
+
+    ParamTable = Excel.CurrentWorkbook(){[Name="ParamTable"]}[Content],
+    Parameter_1_Season = Text.From(ParamTable[Parameter_1]{0}),
+    Parameter_2_Season = Text.From(ParamTable[Parameter_2]{0}),
+    Parameter_3_Season = Text.From(ParamTable[Parameter_3]{0}),
+    Parameter_1_DDD = Date.From(ParamTable[Parameter_1]{1}),
+    Parameter_2_DDD = Date.From(ParamTable[Parameter_2]{1}),
+    Parameter_3_DDD = Date.From(ParamTable[Parameter_3]{1}),
+    Parameter_1_NCAA_DDD = Date.From(ParamTable[Parameter_1]{2}),
+    Parameter_2_NCAA_DDD = Date.From(ParamTable[Parameter_2]{2}),
+    Parameter_3_NCAA_DDD = Date.From(ParamTable[Parameter_3]{2}),
+    Parameter_1_NFL_DDD = Date.From(ParamTable[Parameter_1]{3}),
+    Parameter_2_NFL_DDD = Date.From(ParamTable[Parameter_2]{3}),
+    Parameter_3_NFL_DDD = Date.From(ParamTable[Parameter_3]{3}),
+    
+    #"Promoted Headers" = Table.PromoteHeaders(page_Sheet, [PromoteAllScalars=true]),
+    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"PO Doc Nbr", type text}, {"PO Ln Itm Nbr", type text}, {"Vend Nbr", type text}, {"Vend Ctry", type text}, {"Plnt ID Cd", type text}, {"Sesn Yr Cd", type text}, {"Purchg Grp Cd", type text}, {"Prod Engn Desc", type text}, {"PO Doc Dt", type date}, {"PO Hdr Crt Dt", type date}, {"MAD", type date}, {"Orig Rcpt Dt", type date}, {"Reg Lnch Cd", type text}, {"Reg Lnch Dt", type date}, {"PO Sz Qty", Int64.Type}, {"Lg Desc", type text}, {"Matl Nbr", type text}, {"Matl Long Nm", type text}, {"Styl_Mrch Clsfn Desc", type text}, {"AFS Stck Cat Cd", type text}, {"Gndr Age Desc", type text}, {"Gbl Cat Sum Desc", type text}, {"Gbl Cat Core Focs Desc", type text}, {"Reg Cat Long Desc", type text}, {"Reg AA Ind", type text}, {"PO Shpg Instr", type text}, {"Logistics Method Cd", type text}, {"OGAC Dt", type date}, {"GAC Dt", type date}, {"GAC Rsn Cd", type text}, {"GAC Rsn Desc", type text}, {"RGAC Dt", type date}, {"PO Dlvry Dt", type date}, {"ASN Shipping Delivery Date", type date}, {"SO Doc Hdr Nbr", type text}, {"SO Ln Itm Nbr", type text}, {"Cust Sold To Nm", type text}, {"SO CRD Dt", type date}, {"SO Ord Cncl Dt", type date}, {"Reg Whlsl Prc (USD)", Currency.Type}, {"Whlsl Prc (USD)", Currency.Type}, {"Cnfrmd Qty (SO)", Int64.Type}, {"PO OR Qty", Int64.Type}, {"PO In Trnst Qty", Int64.Type}, {"Rcvd Qty", Int64.Type}, {"Bal to Rcv Qty", Int64.Type}, {"Bal to Rcv %", Int64.Type}, {"Fcty Bal To Ship Qty", Int64.Type}, {"Oustanding PO Balance", Int64.Type}, {"User Id", type text}, {"PO Lin Itm Nbr Dlvry Cmplt Ind", type text}}),
+    Season_Col = Table.AddColumn(#"Changed Type", "SeasonYr", each Text.Combine({Text.Start([Sesn Yr Cd],2),Text.End([Sesn Yr Cd],4)}),type text),
+    #"Removed Columns" = Table.RemoveColumns(Season_Col,{"Sesn Yr Cd"}),
+    
+    PO_Status = Table.AddColumn(#"Removed Columns", "Status", each if [Rcvd Qty] > 0 then "Delivered"
+        //else if [ASN Shipping Delivery Date] < [PO Dlvry Dt] and [ASN Shipping Delivery Date] > #date(1899, 12, 31) then "ASN < PO Dlvry Dt"
+        else if [ASN Shipping Delivery Date] > #date(1900, 1, 1) and [ASN Shipping Delivery Date] < DateTime.Date(DateTime.LocalNow()) then "Past ETA, Check Status"
+        else if [PO Dlvry Dt] < DateTime.Date(DateTime.LocalNow()) and [ASN Shipping Delivery Date] = #date(1899, 12, 31) then "Past ETA, No ASN, Check Status"
+
+    //Early & On-Time
+        //else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Parameter_1_DDD and [ASN Shipping Delivery Date] <= Parameter_1_DDD then "ETA #(2264) " & Text.From(Parameter_1_DDD)
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Parameter_1_DDD then "ETA #(2264) " & Text.From(Parameter_1_DDD)
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Parameter_1_DDD and [ASN Shipping Delivery Date] <= Parameter_1_DDD then "ETA #(2264) " & Text.From(Parameter_1_DDD)
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Parameter_1_NCAA_DDD then "ETA #(2264) " & Text.From(Parameter_1_NCAA_DDD)
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Parameter_1_NCAA_DDD and [ASN Shipping Delivery Date] <= Parameter_1_NCAA_DDD then "ETA #(2264) " & Text.From(Parameter_1_NCAA_DDD)
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Parameter_1_NFL_DDD then "ETA #(2264) " & Text.From(Parameter_1_NFL_DDD)
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Parameter_1_NFL_DDD and [ASN Shipping Delivery Date] <= Parameter_1_NFL_DDD then "ETA #(2264) " & Text.From(Parameter_1_NFL_DDD)
+        
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Parameter_2_DDD then "ETA #(2264) " & Text.From(Parameter_2_DDD)
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Parameter_2_DDD and [ASN Shipping Delivery Date] <= Parameter_2_DDD then "ETA #(2264) " & Text.From(Parameter_2_DDD)
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Parameter_2_NCAA_DDD then "ETA #(2264) " & Text.From(Parameter_2_NCAA_DDD)
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Parameter_2_NCAA_DDD and [ASN Shipping Delivery Date] <= Parameter_2_NCAA_DDD then "ETA #(2264) " & Text.From(Parameter_2_NCAA_DDD)
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Parameter_2_NFL_DDD then "ETA #(2264) " & Text.From(Parameter_2_NFL_DDD)
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Parameter_2_NFL_DDD and [ASN Shipping Delivery Date] <= Parameter_2_NFL_DDD then "ETA #(2264) " & Text.From(Parameter_2_NFL_DDD)
+        
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Parameter_3_DDD then "ETA #(2264) " & Text.From(Parameter_3_DDD)
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Parameter_3_DDD and [ASN Shipping Delivery Date] <= Parameter_3_DDD then "ETA #(2264) " & Text.From(Parameter_3_DDD)
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Parameter_3_NCAA_DDD then "ETA #(2264) " & Text.From(Parameter_3_NCAA_DDD)
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Parameter_3_NCAA_DDD and [ASN Shipping Delivery Date] <= Parameter_3_NCAA_DDD then "ETA #(2264) " & Text.From(Parameter_3_NCAA_DDD)
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Parameter_3_NFL_DDD then "ETA #(2264) " & Text.From(Parameter_3_NFL_DDD)
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Parameter_3_NFL_DDD and [ASN Shipping Delivery Date] <= Parameter_3_NFL_DDD then "ETA #(2264) " & Text.From(Parameter_3_NFL_DDD)
+        
+    //+1 Week
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_DDD,1) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_DDD,1))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_DDD,1) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_DDD,1) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_DDD,1))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NCAA_DDD,1) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_NCAA_DDD,1))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_NCAA_DDD,1) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NCAA_DDD,1) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_NCAA_DDD,1))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NFL_DDD,1) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_NFL_DDD,1))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_NFL_DDD,1) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NFL_DDD,1) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_NFL_DDD,1))
+
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_DDD,1) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_DDD,1))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_DDD,1) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_DDD,1) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_DDD,1))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NCAA_DDD,1) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_NCAA_DDD,1))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_NCAA_DDD,1) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NCAA_DDD,1) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_NCAA_DDD,1))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NFL_DDD,1) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_NFL_DDD,1))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_NFL_DDD,1) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NFL_DDD,1) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_NFL_DDD,1))
+
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_DDD,1) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_DDD,1))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_DDD,1) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_DDD,1) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_DDD,1))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NCAA_DDD,1) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_NCAA_DDD,1))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_NCAA_DDD,1) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NCAA_DDD,1) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_NCAA_DDD,1))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NFL_DDD,1) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_NFL_DDD,1))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_NFL_DDD,1) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NFL_DDD,1) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_NFL_DDD,1))
+
+    //+2 Weeks
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_DDD,2) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_DDD,2))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_DDD,2) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_DDD,2) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_DDD,2))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NCAA_DDD,2) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_NCAA_DDD,2))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_NCAA_DDD,2) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NCAA_DDD,2) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_NCAA_DDD,2))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NFL_DDD,2) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_NFL_DDD,2))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_NFL_DDD,2) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NFL_DDD,2) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_NFL_DDD,2))
+
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_DDD,2) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_DDD,2))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_DDD,2) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_DDD,2) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_DDD,2))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NCAA_DDD,2) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_NCAA_DDD,2))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_NCAA_DDD,2) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NCAA_DDD,2) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_NCAA_DDD,2))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NFL_DDD,2) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_NFL_DDD,2))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_NFL_DDD,2) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NFL_DDD,2) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_NFL_DDD,2))
+
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_DDD,2) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_DDD,2))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_DDD,2) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_DDD,2) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_DDD,2))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NCAA_DDD,2) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_NCAA_DDD,2))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_NCAA_DDD,2) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NCAA_DDD,2) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_NCAA_DDD,2))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NFL_DDD,2) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_NFL_DDD,2))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_NFL_DDD,2) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NFL_DDD,2) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_NFL_DDD,2))
+
+    //+3 Weeks
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_DDD,3) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_DDD,3))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_DDD,3) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_DDD,3) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_DDD,3))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NCAA_DDD,3) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_NCAA_DDD,3))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_NCAA_DDD,3) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NCAA_DDD,3) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_NCAA_DDD,3))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NFL_DDD,3) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_NFL_DDD,3))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_NFL_DDD,3) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NFL_DDD,3) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_NFL_DDD,3))
+
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_DDD,3) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_DDD,3))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_DDD,3) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_DDD,3) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_DDD,3))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NCAA_DDD,3) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_NCAA_DDD,3))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_NCAA_DDD,3) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NCAA_DDD,3) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_NCAA_DDD,3))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NFL_DDD,3) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_NFL_DDD,3))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_NFL_DDD,3) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NFL_DDD,3) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_NFL_DDD,3))
+
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_DDD,3) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_DDD,3))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_DDD,3) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_DDD,3) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_DDD,3))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NCAA_DDD,3) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_NCAA_DDD,3))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_NCAA_DDD,3) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NCAA_DDD,3) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_NCAA_DDD,3))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NFL_DDD,3) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_NFL_DDD,3))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_NFL_DDD,3) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NFL_DDD,3) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_NFL_DDD,3))
+
+    //+4 Weeks
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_DDD,4) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_DDD,4))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_DDD,4) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_DDD,4) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_DDD,4))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NCAA_DDD,4) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_NCAA_DDD,4))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_NCAA_DDD,4) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NCAA_DDD,4) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_NCAA_DDD,4))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NFL_DDD,4) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_NFL_DDD,4))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_NFL_DDD,4) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NFL_DDD,4) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_NFL_DDD,4))
+
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_DDD,4) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_DDD,4))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_DDD,4) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_DDD,4) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_DDD,4))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NCAA_DDD,4) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_NCAA_DDD,4))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_NCAA_DDD,4) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NCAA_DDD,4) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_NCAA_DDD,4))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NFL_DDD,4) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_NFL_DDD,4))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_NFL_DDD,4) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NFL_DDD,4) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_NFL_DDD,4))
+
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_DDD,4) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_DDD,4))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_DDD,4) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_DDD,4) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_DDD,4))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NCAA_DDD,4) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_NCAA_DDD,4))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_NCAA_DDD,4) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NCAA_DDD,4) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_NCAA_DDD,4))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NFL_DDD,4) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_NFL_DDD,4))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_NFL_DDD,4) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NFL_DDD,4) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_NFL_DDD,4))
+
+    //+5 Weeks
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_DDD,5) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_DDD,5))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_DDD,5) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_DDD,5) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_DDD,5))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NCAA_DDD,5) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_NCAA_DDD,5))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_NCAA_DDD,5) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NCAA_DDD,5) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_NCAA_DDD,5))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NFL_DDD,5) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_NFL_DDD,5))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_NFL_DDD,5) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NFL_DDD,5) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_1_NFL_DDD,5))
+
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_DDD,5) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_DDD,5))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_DDD,5) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_DDD,5) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_DDD,5))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NCAA_DDD,5) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_NCAA_DDD,5))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_NCAA_DDD,5) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NCAA_DDD,5) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_NCAA_DDD,5))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NFL_DDD,5) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_NFL_DDD,5))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_NFL_DDD,5) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NFL_DDD,5) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_2_NFL_DDD,5))
+
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_DDD,5) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_DDD,5))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_DDD,5) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_DDD,5) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_DDD,5))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NCAA_DDD,5) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_NCAA_DDD,5))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_NCAA_DDD,5) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NCAA_DDD,5) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_NCAA_DDD,5))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NFL_DDD,5) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_NFL_DDD,5))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_NFL_DDD,5) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NFL_DDD,5) then "ETA #(2264) " & Text.From(Date.AddWeeks(Parameter_3_NFL_DDD,5))
+        
+    //>5 Weeks
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > Date.AddWeeks(Parameter_1_DDD,5) then "ETA > " & Text.From(Date.AddWeeks(Parameter_1_DDD,5))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] > Date.AddWeeks(Parameter_1_DDD,5) then "ETA > " & Text.From(Date.AddWeeks(Parameter_1_DDD,5))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > Date.AddWeeks(Parameter_1_NCAA_DDD,5) then "ETA > " & Text.From(Date.AddWeeks(Parameter_1_NCAA_DDD,5))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] > Date.AddWeeks(Parameter_1_NCAA_DDD,5) then "ETA > " & Text.From(Date.AddWeeks(Parameter_1_NCAA_DDD,5))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > Date.AddWeeks(Parameter_1_NFL_DDD,5) then "ETA > " & Text.From(Date.AddWeeks(Parameter_1_NFL_DDD,5))
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] > Date.AddWeeks(Parameter_1_NFL_DDD,5) then "ETA > " & Text.From(Date.AddWeeks(Parameter_1_NFL_DDD,5))
+
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > Date.AddWeeks(Parameter_2_DDD,5) then "ETA > " & Text.From(Date.AddWeeks(Parameter_2_DDD,5))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] > Date.AddWeeks(Parameter_2_DDD,5) then "ETA > " & Text.From(Date.AddWeeks(Parameter_2_DDD,5))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > Date.AddWeeks(Parameter_2_NCAA_DDD,5) then "ETA > " & Text.From(Date.AddWeeks(Parameter_2_NCAA_DDD,5))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] > Date.AddWeeks(Parameter_2_NCAA_DDD,5) then "ETA > " & Text.From(Date.AddWeeks(Parameter_2_NCAA_DDD,5))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > Date.AddWeeks(Parameter_2_NFL_DDD,5) then "ETA > " & Text.From(Date.AddWeeks(Parameter_2_NFL_DDD,5))
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] > Date.AddWeeks(Parameter_2_NFL_DDD,5) then "ETA > " & Text.From(Date.AddWeeks(Parameter_2_NFL_DDD,5))
+
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > Date.AddWeeks(Parameter_3_DDD,5) then "ETA > " & Text.From(Date.AddWeeks(Parameter_3_DDD,5))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] > Date.AddWeeks(Parameter_3_DDD,5) then "ETA > " & Text.From(Date.AddWeeks(Parameter_3_DDD,5))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > Date.AddWeeks(Parameter_3_NCAA_DDD,5) then "ETA > " & Text.From(Date.AddWeeks(Parameter_3_NCAA_DDD,5))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] > Date.AddWeeks(Parameter_3_NCAA_DDD,5) then "ETA > " & Text.From(Date.AddWeeks(Parameter_3_NCAA_DDD,5))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > Date.AddWeeks(Parameter_3_NFL_DDD,5) then "ETA > " & Text.From(Date.AddWeeks(Parameter_3_NFL_DDD,5))
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] > Date.AddWeeks(Parameter_3_NFL_DDD,5) then "ETA > " & Text.From(Date.AddWeeks(Parameter_3_NFL_DDD,5))
+        
+        else null, type text),
+
+    PO_Status_2 = Table.AddColumn(PO_Status, "PO_Status_2", each if [Rcvd Qty] > 0 then "Delivered"
+        else if [ASN Shipping Delivery Date] > #date(1900, 1, 1) and [ASN Shipping Delivery Date] < DateTime.Date(DateTime.LocalNow()) then "Past ETA, Check Status"
+        else if [PO Dlvry Dt] < DateTime.Date(DateTime.LocalNow()) and [ASN Shipping Delivery Date] = #date(1899, 12, 31) then "Past ETA, No ASN, Check Status"
+
+    //Early & On-Time
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Parameter_1_DDD then "Early/On-Time"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Parameter_1_DDD and [ASN Shipping Delivery Date] <= Parameter_1_DDD then "Early/On-Time"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Parameter_1_NCAA_DDD then "Early/On-Time"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Parameter_1_NCAA_DDD and [ASN Shipping Delivery Date] <= Parameter_1_NCAA_DDD then "Early/On-Time"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Parameter_1_NFL_DDD then "Early/On-Time"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Parameter_1_NFL_DDD and [ASN Shipping Delivery Date] <= Parameter_1_NFL_DDD then "Early/On-Time"
+        
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Parameter_2_DDD then "Early/On-Time"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Parameter_2_DDD and [ASN Shipping Delivery Date] <= Parameter_2_DDD then "Early/On-Time"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Parameter_2_NCAA_DDD then "Early/On-Time"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Parameter_2_NCAA_DDD and [ASN Shipping Delivery Date] <= Parameter_2_NCAA_DDD then "Early/On-Time"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Parameter_2_NFL_DDD then "Early/On-Time"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Parameter_2_NFL_DDD and [ASN Shipping Delivery Date] <= Parameter_2_NFL_DDD then "Early/On-Time"
+        
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Parameter_3_DDD then "Early/On-Time"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Parameter_3_DDD and [ASN Shipping Delivery Date] <= Parameter_3_DDD then "Early/On-Time"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Parameter_3_NCAA_DDD then "Early/On-Time"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Parameter_3_NCAA_DDD and [ASN Shipping Delivery Date] <= Parameter_3_NCAA_DDD then "Early/On-Time"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Parameter_3_NFL_DDD then "Early/On-Time"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Parameter_3_NFL_DDD and [ASN Shipping Delivery Date] <= Parameter_3_NFL_DDD then "Early/On-Time"
+        
+    //+1 Week
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_DDD,1) then "+1 Week"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_DDD,1) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_DDD,1) then "+1 Week"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NCAA_DDD,1) then "+1 Week"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_NCAA_DDD,1) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NCAA_DDD,1) then "+1 Week"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NFL_DDD,1) then "+1 Week"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_NFL_DDD,1) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NFL_DDD,1) then "+1 Week"
+
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_DDD,1) then "+1 Week"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_DDD,1) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_DDD,1) then "+1 Week"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NCAA_DDD,1) then "+1 Week"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_NCAA_DDD,1) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NCAA_DDD,1) then "+1 Week"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NFL_DDD,1) then "+1 Week"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_NFL_DDD,1) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NFL_DDD,1) then "+1 Week"
+
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_DDD,1) then "+1 Week"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_DDD,1) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_DDD,1) then "+1 Week"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NCAA_DDD,1) then "+1 Week"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_NCAA_DDD,1) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NCAA_DDD,1) then "+1 Week"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NFL_DDD,1) then "+1 Week"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_NFL_DDD,1) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NFL_DDD,1) then "+1 Week"
+
+    //+2 Weeks
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_DDD,2) then "+2 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_DDD,2) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_DDD,2) then "+2 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NCAA_DDD,2) then "+2 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_NCAA_DDD,2) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NCAA_DDD,2) then "+2 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NFL_DDD,2) then "+2 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_NFL_DDD,2) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NFL_DDD,2) then "+2 Weeks"
+
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_DDD,2) then "+2 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_DDD,2) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_DDD,2) then "+2 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NCAA_DDD,2) then "+2 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_NCAA_DDD,2) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NCAA_DDD,2) then "+2 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NFL_DDD,2) then "+2 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_NFL_DDD,2) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NFL_DDD,2) then "+2 Weeks"
+
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_DDD,2) then "+2 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_DDD,2) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_DDD,2) then "+2 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NCAA_DDD,2) then "+2 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_NCAA_DDD,2) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NCAA_DDD,2) then "+2 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NFL_DDD,2) then "+2 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_NFL_DDD,2) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NFL_DDD,2) then "+2 Weeks"
+
+    //+3 Weeks
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_DDD,3) then "+3 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_DDD,3) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_DDD,3) then "+3 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NCAA_DDD,3) then "+3 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_NCAA_DDD,3) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NCAA_DDD,3) then "+3 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NFL_DDD,3) then "+3 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_NFL_DDD,3) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NFL_DDD,3) then "+3 Weeks"
+
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_DDD,3) then "+3 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_DDD,3) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_DDD,3) then "+3 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NCAA_DDD,3) then "+3 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_NCAA_DDD,3) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NCAA_DDD,3) then "+3 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NFL_DDD,3) then "+3 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_NFL_DDD,3) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NFL_DDD,3) then "+3 Weeks"
+
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_DDD,3) then "+3 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_DDD,3) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_DDD,3) then "+3 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NCAA_DDD,3) then "+3 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_NCAA_DDD,3) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NCAA_DDD,3) then "+3 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NFL_DDD,3) then "+3 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_NFL_DDD,3) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NFL_DDD,3) then "+3 Weeks"
+
+    //+4 Weeks
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_DDD,4) then "+4 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_DDD,4) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_DDD,4) then "+4 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NCAA_DDD,4) then "+4 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_NCAA_DDD,4) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NCAA_DDD,4) then "+4 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NFL_DDD,4) then "+4 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_NFL_DDD,4) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NFL_DDD,4) then "+4 Weeks"
+
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_DDD,4) then "+4 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_DDD,4) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_DDD,4) then "+4 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NCAA_DDD,4) then "+4 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_NCAA_DDD,4) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NCAA_DDD,4) then "+4 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NFL_DDD,4) then "+4 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_NFL_DDD,4) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NFL_DDD,4) then "+4 Weeks"
+
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_DDD,4) then "+4 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_DDD,4) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_DDD,4) then "+4 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NCAA_DDD,4) then "+4 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_NCAA_DDD,4) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NCAA_DDD,4) then "+4 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NFL_DDD,4) then "+4 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_NFL_DDD,4) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NFL_DDD,4) then "+4 Weeks"
+
+    //+5 Weeks
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_DDD,5) then "+5 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_DDD,5) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_DDD,5) then "+5 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NCAA_DDD,5) then "+5 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_NCAA_DDD,5) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NCAA_DDD,5) then "+5 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NFL_DDD,5) then "+5 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_1_NFL_DDD,5) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_1_NFL_DDD,5) then "+5 Weeks"
+
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_DDD,5) then "+5 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_DDD,5) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_DDD,5) then "+5 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NCAA_DDD,5) then "+5 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_NCAA_DDD,5) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NCAA_DDD,5) then "+5 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NFL_DDD,5) then "+5 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_2_NFL_DDD,5) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_2_NFL_DDD,5) then "+5 Weeks"
+
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_DDD,5) then "+5 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_DDD,5) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_DDD,5) then "+5 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NCAA_DDD,5) then "+5 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_NCAA_DDD,5) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NCAA_DDD,5) then "+5 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > #date(1899, 12, 31) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NFL_DDD,5) then "+5 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] <= Date.AddWeeks(Parameter_3_NFL_DDD,5) and [ASN Shipping Delivery Date] <= Date.AddWeeks(Parameter_3_NFL_DDD,5) then "+5 Weeks"
+        
+    //>5 Weeks
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > Date.AddWeeks(Parameter_1_DDD,5) then ">5 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] > Date.AddWeeks(Parameter_1_DDD,5) then ">5 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > Date.AddWeeks(Parameter_1_NCAA_DDD,5) then ">5 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] > Date.AddWeeks(Parameter_1_NCAA_DDD,5) then ">5 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > Date.AddWeeks(Parameter_1_NFL_DDD,5) then ">5 Weeks"
+        else if [SeasonYr] = Parameter_1_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] > Date.AddWeeks(Parameter_1_NFL_DDD,5) then ">5 Weeks"
+
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > Date.AddWeeks(Parameter_2_DDD,5) then ">5 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] > Date.AddWeeks(Parameter_2_DDD,5) then ">5 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > Date.AddWeeks(Parameter_2_NCAA_DDD,5) then ">5 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] > Date.AddWeeks(Parameter_2_NCAA_DDD,5) then ">5 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > Date.AddWeeks(Parameter_2_NFL_DDD,5) then ">5 Weeks"
+        else if [SeasonYr] = Parameter_2_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] > Date.AddWeeks(Parameter_2_NFL_DDD,5) then ">5 Weeks"
+
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [ASN Shipping Delivery Date] > Date.AddWeeks(Parameter_3_DDD,5) then ">5 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] <> "NCAA" and [Lg Desc] <> "NFL" and [PO Dlvry Dt] > Date.AddWeeks(Parameter_3_DDD,5) then ">5 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [ASN Shipping Delivery Date] > Date.AddWeeks(Parameter_3_NCAA_DDD,5) then ">5 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NCAA" and [PO Dlvry Dt] > Date.AddWeeks(Parameter_3_NCAA_DDD,5) then ">5 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [ASN Shipping Delivery Date] > Date.AddWeeks(Parameter_3_NFL_DDD,5) then ">5 Weeks"
+        else if [SeasonYr] = Parameter_3_Season and [Lg Desc] = "NFL" and [PO Dlvry Dt] > Date.AddWeeks(Parameter_3_NFL_DDD,5) then ">5 Weeks"
+        
+        else null, type text)
+in
+    PO_Status_2
