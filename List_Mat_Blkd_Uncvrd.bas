@@ -1,9 +1,9 @@
 Attribute VB_Name = "List_Mat_Blkd_Uncvrd"
 Sub List_Mat_Blkd_Uncvrd()
-Attribute List_Mat_Blkd_Uncvrd.VB_ProcData.VB_Invoke_Func = " \n14"
+
 '
 ' List_Mat_Blkd_Uncvrd Macro
-'
+' created by mhewi3 8/10/19
 
 '
     Application.ScreenUpdating = False
@@ -44,6 +44,8 @@ Attribute List_Mat_Blkd_Uncvrd.VB_ProcData.VB_Invoke_Func = " \n14"
         lastRowAddress = "A" & lastRow
         
 'Column A Fill-in
+        On Error GoTo ErrorHandler
+        
         Range("A2:A" & lastRow).Select
         Selection.SpecialCells(xlCellTypeBlanks).Select
         ActiveCell.FormulaR1C1 = "=R[-1]C"
@@ -73,6 +75,7 @@ Attribute List_Mat_Blkd_Uncvrd.VB_ProcData.VB_Invoke_Func = " \n14"
         Columns("K:K").PasteSpecial Paste:=xlPasteValues
         Application.CutCopyMode = False
         
+ErrorHandler:
         ActiveSheet.Range("A1").Select
         Selection.AutoFilter
         Columns.AutoFit
@@ -152,4 +155,5 @@ Attribute List_Mat_Blkd_Uncvrd.VB_ProcData.VB_Invoke_Func = " \n14"
         'MsgBox ("Done!")
     
 End Sub
+
 
