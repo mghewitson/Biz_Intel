@@ -1,0 +1,73 @@
+2024-04-13 22:35:51,885 - teradata.udaexec - INFO - Initializing UdaExec...
+2024-04-13 22:35:51,886 - teradata.udaexec - INFO - Reading config files: ['c:\\etc\\udaexec.ini: Not Found', 'C:\\Users\\mhewi3\\udaexec.ini: Not Found', 'c:\\Users\\mhewi3\\Desktop\\udaexec.ini: Not Found']
+2024-04-13 22:35:51,886 - teradata.udaexec - INFO - No previous run number found as c:\Users\mhewi3\Desktop\.runNumber does not exist. Initializing run number to 1
+2024-04-13 22:35:51,886 - teradata.udaexec - INFO - Cleaning up log files older than 90 days.
+2024-04-13 22:35:51,887 - teradata.udaexec - INFO - Removed 0 log files.
+2024-04-13 22:35:52,310 - teradata.udaexec - INFO - Checkpoint file not found: c:\Users\mhewi3\Desktop\testconnec.checkpoint
+2024-04-13 22:35:52,310 - teradata.udaexec - INFO - No previous checkpoint found, executing from beginning...
+2024-04-13 22:35:52,310 - teradata.udaexec - INFO - Execution Details:
+/********************************************************************************
+ * Application Name: testconnec
+ *          Version: 1.0
+ *       Run Number: 20240413223551-1
+ *             Host: MS005277F99AB3
+ *         Platform: Windows-10-10.0.19045-SP0
+ *          OS User: MHewi3
+ *   Python Version: 3.9.19
+ *  Python Compiler: MSC v.1929 64 bit (AMD64)
+ *     Python Build: ('main', 'Mar 20 2024 12:38:46')
+ *  UdaExec Version: 15.10.0.21
+ *     Program Name: c:\Users\mhewi3\AppData\Local\miniconda3\envs\edp_auto\lib\site-packages\ipykernel_launcher.py
+ *      Working Dir: c:\Users\mhewi3\Desktop
+ *          Log Dir: C:\Users\mhewi3\Desktop\logs
+ *         Log File: C:\Users\mhewi3\Desktop\logs\testconnec.20240413223551-1.log
+ *     Config Files: ['c:\\etc\\udaexec.ini: Not Found', 'C:\\Users\\mhewi3\\udaexec.ini: Not Found', 'c:\\Users\\mhewi3\\Desktop\\udaexec.ini: Not Found']
+ *      Query Bands: ApplicationName=testconnec;Version=1.0;JobID=20240413223551-1;ClientUser=MHewi3;Production=False;udaAppLogFile=C:\Users\mhewi3\Desktop\logs\testconnec.20240413223551-1.log;UtilityName=PyTd;UtilityVersion=15.10.0.21
+********************************************************************************/
+2024-04-13 22:35:52,393 - teradata.udaexec - INFO - Creating connection: {'method': 'odbc', 'dsn': 'Teradata_Production', 'username': 'mhewi3', 'password': 'XXXXXX', 'authentication': 'LDAP', 'driver': 'TeraProd'}
+2024-04-13 22:35:52,395 - teradata.tdodbc - INFO - Available drivers: SQL Server, Teradata Database ODBC Driver 17.20, SnowflakeDSIIDriver, Microsoft Access Driver (*.mdb, *.accdb), Microsoft Excel Driver (*.xls, *.xlsx, *.xlsm, *.xlsb), Microsoft Access Text Driver (*.txt, *.csv), Teradata Database ODBC Driver 16.20
+2024-04-13 22:35:57,514 - teradata.udaexec - ERROR - Unable to create connection: {'method': 'odbc', 'dsn': 'Teradata_Production', 'username': 'mhewi3', 'password': 'XXXXXX', 'authentication': 'LDAP', 'driver': 'TeraProd'}
+Traceback (most recent call last):
+  File "c:\Users\mhewi3\AppData\Local\miniconda3\envs\edp_auto\lib\site-packages\teradata\udaexec.py", line 180, in connect
+    self, tdodbc.connect(queryBands=self.queryBands,
+  File "c:\Users\mhewi3\AppData\Local\miniconda3\envs\edp_auto\lib\site-packages\teradata\tdodbc.py", line 454, in __init__
+    checkStatus(rc, hDbc=self.hDbc, method="SQLDriverConnectW")
+  File "c:\Users\mhewi3\AppData\Local\miniconda3\envs\edp_auto\lib\site-packages\teradata\tdodbc.py", line 231, in checkStatus
+    raise DatabaseError(i[2], u"[{}] {}".format(i[0], msg), i[0])
+teradata.api.DatabaseError: (439, "[08001] [Teradata][socket error] (439) WSA E HostUnreach: The Teradata server can't currently be reached over this network")
+2024-04-13 22:39:44,959 - teradata.udaexec - INFO - Initializing UdaExec...
+2024-04-13 22:39:44,959 - teradata.udaexec - INFO - Reading config files: ['c:\\etc\\udaexec.ini: Not Found', 'C:\\Users\\mhewi3\\udaexec.ini: Not Found', 'c:\\Users\\mhewi3\\Desktop\\udaexec.ini: Not Found']
+2024-04-13 22:39:44,959 - teradata.udaexec - INFO - Found run number file: "c:\Users\mhewi3\Desktop\.runNumber"
+2024-04-13 22:39:44,960 - teradata.udaexec - INFO - Cleaning up log files older than 90 days.
+2024-04-13 22:39:44,960 - teradata.udaexec - INFO - Removed 0 log files.
+2024-04-13 22:39:45,145 - teradata.udaexec - INFO - Checkpoint file not found: c:\Users\mhewi3\Desktop\testconnec.checkpoint
+2024-04-13 22:39:45,145 - teradata.udaexec - INFO - No previous checkpoint found, executing from beginning...
+2024-04-13 22:39:45,145 - teradata.udaexec - INFO - Execution Details:
+/********************************************************************************
+ * Application Name: testconnec
+ *          Version: 1.0
+ *       Run Number: 20240413223944-2
+ *             Host: MS005277F99AB3
+ *         Platform: Windows-10-10.0.19045-SP0
+ *          OS User: MHewi3
+ *   Python Version: 3.9.19
+ *  Python Compiler: MSC v.1929 64 bit (AMD64)
+ *     Python Build: ('main', 'Mar 20 2024 12:38:46')
+ *  UdaExec Version: 15.10.0.21
+ *     Program Name: c:\Users\mhewi3\AppData\Local\miniconda3\envs\edp_auto\lib\site-packages\ipykernel_launcher.py
+ *      Working Dir: c:\Users\mhewi3\Desktop
+ *          Log Dir: C:\Users\mhewi3\Desktop\logs
+ *         Log File: C:\Users\mhewi3\Desktop\logs\testconnec.20240413223944-2.log
+ *     Config Files: ['c:\\etc\\udaexec.ini: Not Found', 'C:\\Users\\mhewi3\\udaexec.ini: Not Found', 'c:\\Users\\mhewi3\\Desktop\\udaexec.ini: Not Found']
+ *      Query Bands: ApplicationName=testconnec;Version=1.0;JobID=20240413223944-2;ClientUser=MHewi3;Production=False;udaAppLogFile=C:\Users\mhewi3\Desktop\logs\testconnec.20240413223944-2.log;UtilityName=PyTd;UtilityVersion=15.10.0.21
+********************************************************************************/
+2024-04-13 22:39:45,145 - teradata.udaexec - INFO - Creating connection: {'method': 'odbc', 'dsn': 'Teradata_Production', 'username': 'mhewi3', 'password': 'XXXXXX', 'authentication': 'LDAP', 'driver': 'TeraProd'}
+2024-04-13 22:39:47,569 - teradata.udaexec - ERROR - Unable to create connection: {'method': 'odbc', 'dsn': 'Teradata_Production', 'username': 'mhewi3', 'password': 'XXXXXX', 'authentication': 'LDAP', 'driver': 'TeraProd'}
+Traceback (most recent call last):
+  File "c:\Users\mhewi3\AppData\Local\miniconda3\envs\edp_auto\lib\site-packages\teradata\udaexec.py", line 180, in connect
+    self, tdodbc.connect(queryBands=self.queryBands,
+  File "c:\Users\mhewi3\AppData\Local\miniconda3\envs\edp_auto\lib\site-packages\teradata\tdodbc.py", line 454, in __init__
+    checkStatus(rc, hDbc=self.hDbc, method="SQLDriverConnectW")
+  File "c:\Users\mhewi3\AppData\Local\miniconda3\envs\edp_auto\lib\site-packages\teradata\tdodbc.py", line 231, in checkStatus
+    raise DatabaseError(i[2], u"[{}] {}".format(i[0], msg), i[0])
+teradata.api.DatabaseError: (439, "[08001] [Teradata][socket error] (439) WSA E HostUnreach: The Teradata server can't currently be reached over this network")
