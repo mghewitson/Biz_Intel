@@ -1,0 +1,155 @@
+2024-04-16 14:08:30,099 - teradata.udaexec - INFO - Initializing UdaExec...
+2024-04-16 14:08:30,100 - teradata.udaexec - INFO - Reading config files: ['c:\\etc\\udaexec.ini: Not Found', 'C:\\Users\\mhewi3\\udaexec.ini: Not Found', 'c:\\Users\\mhewi3\\Desktop\\New - EDP_Automation\\udaexec.ini: Not Found']
+2024-04-16 14:08:30,100 - teradata.udaexec - INFO - Found run number file: "c:\Users\mhewi3\Desktop\New - EDP_Automation\.runNumber"
+2024-04-16 14:08:30,100 - teradata.udaexec - INFO - Cleaning up log files older than 90 days.
+2024-04-16 14:08:30,100 - teradata.udaexec - INFO - Removed 0 log files.
+2024-04-16 14:08:30,420 - teradata.udaexec - INFO - Checkpoint file not found: c:\Users\mhewi3\Desktop\New - EDP_Automation\testconnec.checkpoint
+2024-04-16 14:08:30,420 - teradata.udaexec - INFO - No previous checkpoint found, executing from beginning...
+2024-04-16 14:08:30,420 - teradata.udaexec - INFO - Execution Details:
+/********************************************************************************
+ * Application Name: testconnec
+ *          Version: 1.0
+ *       Run Number: 20240416140830-3
+ *             Host: MS005277F99AB3
+ *         Platform: Windows-10-10.0.19045-SP0
+ *          OS User: MHewi3
+ *   Python Version: 3.9.19
+ *  Python Compiler: MSC v.1929 64 bit (AMD64)
+ *     Python Build: ('main', 'Mar 20 2024 12:38:46')
+ *  UdaExec Version: 15.10.0.21
+ *     Program Name: c:\Users\mhewi3\AppData\Local\miniconda3\envs\edp_auto\lib\site-packages\ipykernel_launcher.py
+ *      Working Dir: c:\Users\mhewi3\Desktop\New - EDP_Automation
+ *      Git Version: git version 2.39.0.windows.1
+ *     Git Revision: 283be67
+ *        Git Dirty: True [ M .runNumber,?? EDP_AUTOMATION/,?? logs/testconnec.20240416140830-3.log]
+ *          Log Dir: C:\Users\mhewi3\Desktop\New - EDP_Automation\logs
+ *         Log File: C:\Users\mhewi3\Desktop\New - EDP_Automation\logs\testconnec.20240416140830-3.log
+ *     Config Files: ['c:\\etc\\udaexec.ini: Not Found', 'C:\\Users\\mhewi3\\udaexec.ini: Not Found', 'c:\\Users\\mhewi3\\Desktop\\New - EDP_Automation\\udaexec.ini: Not Found']
+ *      Query Bands: ApplicationName=testconnec;Version=1.0;JobID=20240416140830-3;ClientUser=MHewi3;Production=False;udaAppLogFile=C:\Users\mhewi3\Desktop\New - EDP_Automation\logs\testconnec.20240416140830-3.log;gitRevision=283be67;gitDirty=True;UtilityName=PyTd;UtilityVersion=15.10.0.21
+********************************************************************************/
+2024-04-16 14:08:30,479 - teradata.udaexec - INFO - Creating connection: {'method': 'odbc', 'dsn': 'Teradata_Production', 'username': 'mhewi3', 'password': 'XXXXXX', 'authentication': 'LDAP', 'driver': 'TeraProd'}
+2024-04-16 14:08:30,494 - teradata.tdodbc - INFO - Available drivers: SQL Server, Teradata Database ODBC Driver 17.20, SnowflakeDSIIDriver, Microsoft Access Driver (*.mdb, *.accdb), Microsoft Excel Driver (*.xls, *.xlsx, *.xlsm, *.xlsb), Microsoft Access Text Driver (*.txt, *.csv), Teradata Database ODBC Driver 16.20
+2024-04-16 14:08:33,422 - teradata.udaexec - INFO - Connection successful. Duration: 2.943 seconds. Details: {'method': 'odbc', 'dsn': 'Teradata_Production', 'username': 'mhewi3', 'password': 'XXXXXX', 'authentication': 'LDAP', 'driver': 'TeraProd'}
+2024-04-16 14:08:50,485 - teradata.udaexec - INFO - Query Successful. Duration: 3.031 seconds, Rows: 1, Query: 
+
+select 
+"Cal_SNP_EngnRunDt_v__Version_"."RefSNP_EngnRunDt" "Ver_Wk_Dt" , 
+"Div_v"."DivCd" "Prod_Engn_Cd" , 
+right("T3"."BusSeasnCd", 2) || left("T3"."BusSeasnCd", 4) "SesnYr" , 
+"LnPln_Rptg_v"."StylDsplyCd" "Styl_Dsply_Cd" , 
+"LnPln_Rptg_v"."GlblMatlIntntDesc" "Matl_Intnt_Desc" , 
+"SNP_EnhcdDmndPrty_v"."EnhcdDmndPrtyDesc" "EDP" , 
+"LnPln_Rptg_v"."GlblProdtLglLongNm" "APO_Prod_Desc" , 
+"LnPln_Rptg_v"."MatlTypeCd" "Matl_Type_Cd" , 
+"LnPln_Rptg_v"."PO_DevTeamNm" "PO_Dev_Team_Nm" , 
+"LnPln_Rptg_v"."RgnSeasnSpclOfrgTypeDesc" "c10" , 
+sum("SNP_FinGdCmphsvUnPlndDtl_v"."TotDmndQty") "Tot_Rlsd_DP_Qty" , 
+sum("SNP_FinGdCmphsvUnPlndDtl_v"."NetRqmntsQty") "Net_Rqrmnts_Qty" , 
+sum("SNP_FinGdCmphsvUnPlndDtl_v"."TotUnPlndDmndQty") "Tot_Unplanned_Dmnd_Qty" 
+ 
+from ((((
+    "PLN"."Cal_SNP_EngnRunDt_v" "Cal_SNP_EngnRunDt_v__Version_" 
+        INNER JOIN "PLN"."SNP_FinGdCmphsvUnPlndDtl_v" "SNP_FinGdCmphsvUnPlndDtl_v" on "Cal_SNP_EngnRunDt_v__Version_"."DivCd" = "SNP_FinGdCmphsvUnPlndDtl_v"."DivCd" and "Cal_SNP_EngnRunDt_v__Version_"."RefSNP_EngnRunDt" = "SNP_FinGdCmphsvUnPlndDtl_v"."RefSNP_EngnRunDt") 
+        INNER JOIN "PLN"."LnPln_Rptg_v" "LnPln_Rptg_v" on "SNP_FinGdCmphsvUnPlndDtl_v"."DivCd" = "LnPln_Rptg_v"."GlblDivCd" and "SNP_FinGdCmphsvUnPlndDtl_v"."PlngCtryCd" = "LnPln_Rptg_v"."PlngCtryCd" and "SNP_FinGdCmphsvUnPlndDtl_v"."PlngProdtCd" = "LnPln_Rptg_v"."PlngProdtCd" and "SNP_FinGdCmphsvUnPlndDtl_v"."MatlTypeCd" = "LnPln_Rptg_v"."MatlTypeCd" and "SNP_FinGdCmphsvUnPlndDtl_v"."RgnSeasnMaxSeqNbr" = "LnPln_Rptg_v"."RgnSeasnMaxSeqNbr") 
+        INNER JOIN "PLN"."Div_v" "Div_v" on "SNP_FinGdCmphsvUnPlndDtl_v"."DivCd" = "Div_v"."DivCd") 
+        LEFT OUTER JOIN "PLN"."Cal_BusFsclN1GregorianCalDt_v" "T3" on "SNP_FinGdCmphsvUnPlndDtl_v"."BusSeasnRlvncDt" = "T3"."BusDt" and 'NF' = "T3"."BusCalCd" and 'Y' = "T3"."FirstDtOfBusSeasnInd") 
+        LEFT OUTER JOIN "PLN"."SNP_EnhcdDmndPrty_v" "SNP_EnhcdDmndPrty_v" on "SNP_FinGdCmphsvUnPlndDtl_v"."EnhcdDmndPrtyCd" = "SNP_EnhcdDmndPrty_v"."EnhcdDmndPrtyCd"
+
+where "SNP_EnhcdDmndPrty_v"."EnhcdDmndPrtyDesc" in ('Standard') and lower ("LnPln_Rptg_v"."GlblMatlIntntDesc") like '%' || lower ('FLYKNIT') || '%' and "LnPln_Rptg_v"."MatlTypeCd" in ('FG   ', 'PROJ ') and "Div_v"."DivCd" in ('20   ') and "SNP_FinGdCmphsvUnPlndDtl_v"."RefSNP_EngnRunDt" = DATE '2024-04-06' and "Cal_SNP_EngnRunDt_v__Version_"."RefSNP_EngnRunDt" = DATE '2024-04-06'
+
+group by "Cal_SNP_EngnRunDt_v__Version_"."RefSNP_EngnRunDt", "SNP_EnhcdDmndPrty_v"."EnhcdDmndPrtyDesc", "LnPln_Rptg_v"."MatlTypeCd", "LnPln_Rptg_v"."PO_DevTeamNm", "LnPln_Rptg_v"."GlblMatlIntntDesc", "Div_v"."DivCd", "LnPln_Rptg_v"."StylDsplyCd", "LnPln_Rptg_v"."GlblProdtLglLongNm", "LnPln_Rptg_v"."RgnSeasnSpclOfrgTypeDesc", right("T3"."BusSeasnCd", 2) || left("T3"."BusSeasnCd", 4)
+
+
+2024-04-16 14:09:17,033 - teradata.udaexec - INFO - Query Successful. Duration: 2.845 seconds, Rows: 9, Query: 
+
+select 
+"Cal_SNP_EngnRunDt_v__Version_"."RefSNP_EngnRunDt" "Ver_Wk_Dt" , 
+"Div_v"."DivCd" "Prod_Engn_Cd" , 
+right("T3"."BusSeasnCd", 2) || left("T3"."BusSeasnCd", 4) "SesnYr" , 
+"LnPln_Rptg_v"."StylDsplyCd" "Styl_Dsply_Cd" , 
+"LnPln_Rptg_v"."GlblMatlIntntDesc" "Matl_Intnt_Desc" , 
+"SNP_EnhcdDmndPrty_v"."EnhcdDmndPrtyDesc" "EDP" , 
+"LnPln_Rptg_v"."GlblProdtLglLongNm" "APO_Prod_Desc" , 
+"LnPln_Rptg_v"."MatlTypeCd" "Matl_Type_Cd" , 
+"LnPln_Rptg_v"."PO_DevTeamNm" "PO_Dev_Team_Nm" , 
+"LnPln_Rptg_v"."RgnSeasnSpclOfrgTypeDesc" "c10" , 
+sum("SNP_FinGdCmphsvUnPlndDtl_v"."TotDmndQty") "Tot_Rlsd_DP_Qty" , 
+sum("SNP_FinGdCmphsvUnPlndDtl_v"."NetRqmntsQty") "Net_Rqrmnts_Qty" , 
+sum("SNP_FinGdCmphsvUnPlndDtl_v"."TotUnPlndDmndQty") "Tot_Unplanned_Dmnd_Qty" 
+ 
+from ((((
+    "PLN"."Cal_SNP_EngnRunDt_v" "Cal_SNP_EngnRunDt_v__Version_" 
+        INNER JOIN "PLN"."SNP_FinGdCmphsvUnPlndDtl_v" "SNP_FinGdCmphsvUnPlndDtl_v" on "Cal_SNP_EngnRunDt_v__Version_"."DivCd" = "SNP_FinGdCmphsvUnPlndDtl_v"."DivCd" and "Cal_SNP_EngnRunDt_v__Version_"."RefSNP_EngnRunDt" = "SNP_FinGdCmphsvUnPlndDtl_v"."RefSNP_EngnRunDt") 
+        INNER JOIN "PLN"."LnPln_Rptg_v" "LnPln_Rptg_v" on "SNP_FinGdCmphsvUnPlndDtl_v"."DivCd" = "LnPln_Rptg_v"."GlblDivCd" and "SNP_FinGdCmphsvUnPlndDtl_v"."PlngCtryCd" = "LnPln_Rptg_v"."PlngCtryCd" and "SNP_FinGdCmphsvUnPlndDtl_v"."PlngProdtCd" = "LnPln_Rptg_v"."PlngProdtCd" and "SNP_FinGdCmphsvUnPlndDtl_v"."MatlTypeCd" = "LnPln_Rptg_v"."MatlTypeCd" and "SNP_FinGdCmphsvUnPlndDtl_v"."RgnSeasnMaxSeqNbr" = "LnPln_Rptg_v"."RgnSeasnMaxSeqNbr") 
+        INNER JOIN "PLN"."Div_v" "Div_v" on "SNP_FinGdCmphsvUnPlndDtl_v"."DivCd" = "Div_v"."DivCd") 
+        LEFT OUTER JOIN "PLN"."Cal_BusFsclN1GregorianCalDt_v" "T3" on "SNP_FinGdCmphsvUnPlndDtl_v"."BusSeasnRlvncDt" = "T3"."BusDt" and 'NF' = "T3"."BusCalCd" and 'Y' = "T3"."FirstDtOfBusSeasnInd") 
+        LEFT OUTER JOIN "PLN"."SNP_EnhcdDmndPrty_v" "SNP_EnhcdDmndPrty_v" on "SNP_FinGdCmphsvUnPlndDtl_v"."EnhcdDmndPrtyCd" = "SNP_EnhcdDmndPrty_v"."EnhcdDmndPrtyCd"
+
+where "SNP_EnhcdDmndPrty_v"."EnhcdDmndPrtyDesc" in ('Standard') and lower ("LnPln_Rptg_v"."GlblMatlIntntDesc") like '%' || lower ('FLYKNIT') || '%' and "LnPln_Rptg_v"."MatlTypeCd" in ('FG   ', 'PROJ ') and "Div_v"."DivCd" in ('20   ') and "SNP_FinGdCmphsvUnPlndDtl_v"."RefSNP_EngnRunDt" = DATE '2024-03-30' and "Cal_SNP_EngnRunDt_v__Version_"."RefSNP_EngnRunDt" = DATE '2024-03-30'
+
+group by "Cal_SNP_EngnRunDt_v__Version_"."RefSNP_EngnRunDt", "SNP_EnhcdDmndPrty_v"."EnhcdDmndPrtyDesc", "LnPln_Rptg_v"."MatlTypeCd", "LnPln_Rptg_v"."PO_DevTeamNm", "LnPln_Rptg_v"."GlblMatlIntntDesc", "Div_v"."DivCd", "LnPln_Rptg_v"."StylDsplyCd", "LnPln_Rptg_v"."GlblProdtLglLongNm", "LnPln_Rptg_v"."RgnSeasnSpclOfrgTypeDesc", right("T3"."BusSeasnCd", 2) || left("T3"."BusSeasnCd", 4)
+
+
+2024-04-16 14:09:37,620 - teradata.udaexec - INFO - Query Successful. Duration: 3.952 seconds, Rows: 0, Query: 
+
+select 
+"Cal_SNP_EngnRunDt_v__Version_"."RefSNP_EngnRunDt" "Ver_Wk_Dt" , 
+"Div_v"."DivCd" "Prod_Engn_Cd" , 
+right("T3"."BusSeasnCd", 2) || left("T3"."BusSeasnCd", 4) "SesnYr" , 
+"LnPln_Rptg_v"."StylDsplyCd" "Styl_Dsply_Cd" , 
+"LnPln_Rptg_v"."GlblMatlIntntDesc" "Matl_Intnt_Desc" , 
+"SNP_EnhcdDmndPrty_v"."EnhcdDmndPrtyDesc" "EDP" , 
+"LnPln_Rptg_v"."GlblProdtLglLongNm" "APO_Prod_Desc" , 
+"LnPln_Rptg_v"."MatlTypeCd" "Matl_Type_Cd" , 
+"LnPln_Rptg_v"."PO_DevTeamNm" "PO_Dev_Team_Nm" , 
+"LnPln_Rptg_v"."RgnSeasnSpclOfrgTypeDesc" "c10" , 
+sum("SNP_FinGdCmphsvUnPlndDtl_v"."TotDmndQty") "Tot_Rlsd_DP_Qty" , 
+sum("SNP_FinGdCmphsvUnPlndDtl_v"."NetRqmntsQty") "Net_Rqrmnts_Qty" , 
+sum("SNP_FinGdCmphsvUnPlndDtl_v"."TotUnPlndDmndQty") "Tot_Unplanned_Dmnd_Qty" 
+ 
+from ((((
+    "PLN"."Cal_SNP_EngnRunDt_v" "Cal_SNP_EngnRunDt_v__Version_" 
+        INNER JOIN "PLN"."SNP_FinGdCmphsvUnPlndDtl_v" "SNP_FinGdCmphsvUnPlndDtl_v" on "Cal_SNP_EngnRunDt_v__Version_"."DivCd" = "SNP_FinGdCmphsvUnPlndDtl_v"."DivCd" and "Cal_SNP_EngnRunDt_v__Version_"."RefSNP_EngnRunDt" = "SNP_FinGdCmphsvUnPlndDtl_v"."RefSNP_EngnRunDt") 
+        INNER JOIN "PLN"."LnPln_Rptg_v" "LnPln_Rptg_v" on "SNP_FinGdCmphsvUnPlndDtl_v"."DivCd" = "LnPln_Rptg_v"."GlblDivCd" and "SNP_FinGdCmphsvUnPlndDtl_v"."PlngCtryCd" = "LnPln_Rptg_v"."PlngCtryCd" and "SNP_FinGdCmphsvUnPlndDtl_v"."PlngProdtCd" = "LnPln_Rptg_v"."PlngProdtCd" and "SNP_FinGdCmphsvUnPlndDtl_v"."MatlTypeCd" = "LnPln_Rptg_v"."MatlTypeCd" and "SNP_FinGdCmphsvUnPlndDtl_v"."RgnSeasnMaxSeqNbr" = "LnPln_Rptg_v"."RgnSeasnMaxSeqNbr") 
+        INNER JOIN "PLN"."Div_v" "Div_v" on "SNP_FinGdCmphsvUnPlndDtl_v"."DivCd" = "Div_v"."DivCd") 
+        LEFT OUTER JOIN "PLN"."Cal_BusFsclN1GregorianCalDt_v" "T3" on "SNP_FinGdCmphsvUnPlndDtl_v"."BusSeasnRlvncDt" = "T3"."BusDt" and 'NF' = "T3"."BusCalCd" and 'Y' = "T3"."FirstDtOfBusSeasnInd") 
+        LEFT OUTER JOIN "PLN"."SNP_EnhcdDmndPrty_v" "SNP_EnhcdDmndPrty_v" on "SNP_FinGdCmphsvUnPlndDtl_v"."EnhcdDmndPrtyCd" = "SNP_EnhcdDmndPrty_v"."EnhcdDmndPrtyCd"
+
+where "SNP_EnhcdDmndPrty_v"."EnhcdDmndPrtyDesc" in ('Standard') and lower ("LnPln_Rptg_v"."GlblMatlIntntDesc") like '%' || lower ('FLYKNIT') || '%' and "LnPln_Rptg_v"."MatlTypeCd" in ('FG   ', 'PROJ ') and "Div_v"."DivCd" in ('20   ') and "SNP_FinGdCmphsvUnPlndDtl_v"."RefSNP_EngnRunDt" = DATE '2024-04-13' and "Cal_SNP_EngnRunDt_v__Version_"."RefSNP_EngnRunDt" = DATE '2024-04-13'
+
+group by "Cal_SNP_EngnRunDt_v__Version_"."RefSNP_EngnRunDt", "SNP_EnhcdDmndPrty_v"."EnhcdDmndPrtyDesc", "LnPln_Rptg_v"."MatlTypeCd", "LnPln_Rptg_v"."PO_DevTeamNm", "LnPln_Rptg_v"."GlblMatlIntntDesc", "Div_v"."DivCd", "LnPln_Rptg_v"."StylDsplyCd", "LnPln_Rptg_v"."GlblProdtLglLongNm", "LnPln_Rptg_v"."RgnSeasnSpclOfrgTypeDesc", right("T3"."BusSeasnCd", 2) || left("T3"."BusSeasnCd", 4)
+
+
+2024-04-16 14:09:53,823 - teradata.udaexec - INFO - Query Successful. Duration: 6.996 seconds, Rows: 0, Query: 
+
+select 
+"Cal_SNP_EngnRunDt_v__Version_"."RefSNP_EngnRunDt" "Ver_Wk_Dt" , 
+"Div_v"."DivCd" "Prod_Engn_Cd" , 
+"SNP_EnhcdDmndPrty_v"."EnhcdDmndPrtyDesc" "EDP" , 
+"LnPln_Rptg_v"."MO_ExprsLnInd" "MO_Exprs_Ln_Ind" , 
+"LnPln_Rptg_v"."StylDsplyCd" "Styl_Dsply_Cd" , 
+"LnPln_Rptg_v"."ColrDsplyCd" "Colr_Dsply_Cd" , 
+"LnPln_Rptg_v"."PlngProdtCd" "APO_Prod_Cd" , 
+"LnPln_Rptg_v"."GlblProdtLglLongNm" "APO_Prod_Desc" , 
+"LnPln_Rptg_v"."MatlTypeCd" "Matl_Type_Cd" , 
+"LnPln_Rptg_v"."GlblLgDesc" "Lg_Desc" , 
+"LnPln_Rptg_v"."GlblPlngProdtGrpDesc" "Glbl_Plng_Prodt_Grp_Desc" , 
+"LnPln_Rptg_v"."GlblCatCoreFcsDesc" "Gbl_Cat_Core_Focs_Desc" , 
+sum("SNP_FinGdCmphsvUnPlndDtl_v"."TotDmndQty") "Tot_Rlsd_DP_Qty" , 
+sum("SNP_FinGdCmphsvUnPlndDtl_v"."NetRqmntsQty") "Net_Rqrmnts_Qty" , 
+sum("SNP_FinGdCmphsvUnPlndDtl_v"."TotUnPlndDmndQty") "Tot_Unplanned_Dmnd_Qty"
+
+ from (((
+    "PLN"."Cal_SNP_EngnRunDt_v" "Cal_SNP_EngnRunDt_v__Version_" 
+        INNER JOIN "PLN"."SNP_FinGdCmphsvUnPlndDtl_v" "SNP_FinGdCmphsvUnPlndDtl_v" on "Cal_SNP_EngnRunDt_v__Version_"."DivCd" = "SNP_FinGdCmphsvUnPlndDtl_v"."DivCd" and "Cal_SNP_EngnRunDt_v__Version_"."RefSNP_EngnRunDt" = "SNP_FinGdCmphsvUnPlndDtl_v"."RefSNP_EngnRunDt") 
+        INNER JOIN "PLN"."LnPln_Rptg_v" "LnPln_Rptg_v" on "SNP_FinGdCmphsvUnPlndDtl_v"."DivCd" = "LnPln_Rptg_v"."GlblDivCd" and "SNP_FinGdCmphsvUnPlndDtl_v"."PlngCtryCd" = "LnPln_Rptg_v"."PlngCtryCd" and "SNP_FinGdCmphsvUnPlndDtl_v"."PlngProdtCd" = "LnPln_Rptg_v"."PlngProdtCd" and "SNP_FinGdCmphsvUnPlndDtl_v"."MatlTypeCd" = "LnPln_Rptg_v"."MatlTypeCd" and "SNP_FinGdCmphsvUnPlndDtl_v"."RgnSeasnMaxSeqNbr" = "LnPln_Rptg_v"."RgnSeasnMaxSeqNbr") 
+        INNER JOIN "PLN"."Div_v" "Div_v" on "SNP_FinGdCmphsvUnPlndDtl_v"."DivCd" = "Div_v"."DivCd") 
+        LEFT OUTER JOIN "PLN"."SNP_EnhcdDmndPrty_v" "SNP_EnhcdDmndPrty_v" on "SNP_FinGdCmphsvUnPlndDtl_v"."EnhcdDmndPrtyCd" = "SNP_EnhcdDmndPrty_v"."EnhcdDmndPrtyCd"
+
+ where "SNP_FinGdCmphsvUnPlndDtl_v"."RefSNP_EngnRunDt" = DATE '2024-04-13' and "Cal_SNP_EngnRunDt_v__Version_"."RefSNP_EngnRunDt" = DATE '2024-04-13' and "LnPln_Rptg_v"."MatlTypeCd" in ('PLUG ') and "SNP_EnhcdDmndPrty_v"."EnhcdDmndPrtyDesc" in ('Standard')
+ 
+ group by "Cal_SNP_EngnRunDt_v__Version_"."RefSNP_EngnRunDt", "SNP_EnhcdDmndPrty_v"."EnhcdDmndPrtyDesc", "LnPln_Rptg_v"."MatlTypeCd", "LnPln_Rptg_v"."MO_ExprsLnInd", "LnPln_Rptg_v"."StylDsplyCd", "Div_v"."DivCd", "LnPln_Rptg_v"."ColrDsplyCd", "LnPln_Rptg_v"."PlngProdtCd", "LnPln_Rptg_v"."GlblProdtLglLongNm", "LnPln_Rptg_v"."GlblLgDesc", "LnPln_Rptg_v"."GlblPlngProdtGrpDesc", "LnPln_Rptg_v"."GlblCatCoreFcsDesc"
+
+ order by 2 asc 
+
+
